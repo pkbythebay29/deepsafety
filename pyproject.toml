@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepsafety"
+version = "0.1.0"
+description = "A Python library for industrial and safety calculations"
+authors = [
+    { name="Pkbythebay29", email="kannan@haztechrisk.org" }
+]
+license = { file="LICENSE" }
+readme = "README.md"
+keywords = ["process safety", "dispersion", "flammability", "explosions", "toxicology"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/pkbythebay29/deepsafety"
+
+[tool.setuptools.packages.find]
+where = ["deepsafety"]
