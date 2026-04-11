@@ -12,7 +12,13 @@ from deepsafety.catalog import (
 )
 from deepsafety.constants import list_constants, resolve_constants
 from deepsafety.dispersion.neutrally_buoyant import calculate_sigma_y, calculate_sigma_z
+from deepsafety.dispersion_service import solve_dispersion_model
+from deepsafety.effect_models import solve_effect_model
+from deepsafety.fire_explosion_models import solve_fire_explosion_model
 from deepsafety.gis import circle_polygon, haversine_distance_m, point_feature
+from deepsafety.scenario_engine import build_scenario_definition
+from deepsafety.scenario_library import list_templates
+from deepsafety.source_models import solve_source_model
 from deepsafety.schemas import (
     CalculationRequest,
     CalculationResponse,
@@ -26,7 +32,15 @@ from deepsafety.schemas import (
     ImpactZoneResponse,
     ModelDetail,
     ModelSummary,
+    ScenarioDefinitionRequest,
+    ScenarioDefinitionResponse,
+    ServiceRequest,
+    ServiceResponse,
+    TemplateSummary,
+    VisualizationRequest,
+    VisualizationResponse,
 )
+from deepsafety.visualization import build_visualization_layer
 
 
 DEFAULT_SCENARIO_MODELS = {
@@ -36,6 +50,118 @@ DEFAULT_SCENARIO_MODELS = {
 DEFAULT_IMPACT_MODELS = {
     "leak": "dispersion.gaussian_puff_screening_radius",
     "fire": "fire.point_source_heat_flux_radius",
+}
+SOURCE_MODEL_METADATA = {
+    "gas_release": {
+        "equations": [
+            "m_dot = C_d * A * P_0 * sqrt(k / (Z * R * T_0) * (2 / (k + 1))^((k + 1) / (k - 1))) for choked flow",
+            "m_dot = C_d * A * P_0 * sqrt((2*k)/(Z*R*T_0*(k-1)) * (r^(2/k) - r^((k+1)/k))) for non-choked flow",
+        ],
+        "assumptions": [
+            "Ideal-gas compressible discharge screening relation.",
+            "Pipe and hole releases share the same orifice-style discharge core with user-supplied geometry.",
+        ],
+    },
+    "liquid_release": {
+        "equations": [
+            "v = C_d * sqrt(2 * g * h) for gravity-driven discharge",
+            "v = C_d * sqrt(2 * DeltaP / rho) for pressurized liquid release",
+        ],
+        "assumptions": [
+            "Incompressible liquid screening model.",
+        ],
+    },
+    "flashing": {
+        "equations": [
+            "flash_fraction = cp_liquid * (T_storage - T_boil) / latent_heat",
+        ],
+        "assumptions": [
+            "Single-step equilibrium-style flash estimate.",
+        ],
+    },
+    "pool_formation": {
+        "equations": [
+            "pool_area = mass / (rho * pool_thickness)",
+        ],
+        "assumptions": [
+            "Uniform pool thickness screening model.",
+        ],
+    },
+    "evaporation": {
+        "equations": [
+            "m_dot = q'' * A / latent_heat for heat-transfer-limited evaporation",
+            "m_dot = k_m * A * C_s for mass-transfer-limited evaporation",
+        ],
+        "assumptions": [
+            "Surface-limited evaporation screening model.",
+        ],
+    },
+}
+DISPERSION_MODEL_METADATA = {
+    "gaussian_plume": {
+        "equations": [
+            "C = Q_dot / (2 * pi * u * sigma_y * sigma_z) * exp(-(y^2)/(2*sigma_y^2)) * [exp(-(z-H)^2/(2*sigma_z^2)) + exp(-(z+H)^2/(2*sigma_z^2))]",
+        ],
+        "assumptions": [
+            "Steady-state continuous release screening model.",
+        ],
+    },
+    "gaussian_puff": {
+        "equations": [
+            "C = Q / (((2 * pi)^(3/2)) * sigma_y * sigma_z) * exp(-0.5 * ((y / sigma_y)^2 + (z / sigma_z)^2))",
+        ],
+        "assumptions": [
+            "Instantaneous puff screening model.",
+        ],
+    },
+    "dense_gas": {
+        "equations": [
+            "Screening box/slumping relation using cloud volume, density ratio, and reduced gravity.",
+        ],
+        "assumptions": [
+            "Dense gas endpoint is a screening approximation, not a full heavy-gas CFD model.",
+        ],
+    },
+}
+FIRE_EXPLOSION_METADATA = {
+    "jet_fire": {
+        "equations": ["q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)"],
+        "assumptions": ["Point-source radiation screening for jet fire impacts."],
+    },
+    "pool_fire": {
+        "equations": ["m_dot = A_pool * m''", "q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)"],
+        "assumptions": ["Pool fire heat flux is treated with a point-source radiation approximation."],
+    },
+    "fireball_bleve": {
+        "equations": ["D = 5.8 * M^0.325", "t = 0.45 * M^0.26"],
+        "assumptions": ["BLEVE fireball size and duration use common empirical screening relations."],
+    },
+    "tnt_equivalency": {
+        "equations": ["W_TNT = eta * M * DeltaH_c / H_TNT"],
+        "assumptions": ["Explosion converted to TNT equivalent for screening overpressure."],
+    },
+    "multi_energy": {
+        "equations": ["Equivalent TNT scaled by user-supplied blast strength factor."],
+        "assumptions": ["Multi-energy implementation is screening-level rather than a full chart-based implementation."],
+    },
+    "vce": {
+        "equations": ["W_TNT = yield_factor * M_cloud * DeltaH_c / H_TNT"],
+        "assumptions": ["Yield factor is driven by ignition delay and congestion for screening."],
+    },
+}
+EFFECT_MODEL_METADATA = {
+    "toxic_probit": {
+        "equations": ["Y = a + b * ln(C^n * t)"],
+        "assumptions": ["Fatality probability derived from a probit-to-normal conversion."],
+    },
+    "thermal_probit": {
+        "equations": ["Y = a + b * ln(I^(4/3) * t)"],
+        "assumptions": ["Burn probability derived from a thermal probit screening relation."],
+    },
+    "explosion_probit": {
+        "equations": ["Y = a + b * ln(P)"],
+        "assumptions": ["Explosion fatality probability derived from overpressure probit form."],
+    },
 }
 
 
@@ -96,6 +222,20 @@ def _to_model_detail(model) -> ModelDetail:
         ],
         constants=_to_constant_metadata(resolved_constants),
         notes=list(model.notes),
+    )
+
+
+def _service_response(
+    model_type: str,
+    outputs: dict[str, object],
+    metadata: dict[str, dict[str, list[str]]],
+) -> ServiceResponse:
+    details = metadata.get(model_type, {"equations": [], "assumptions": []})
+    return ServiceResponse(
+        model_type=model_type,
+        outputs=outputs,
+        equations=details["equations"],
+        assumptions=details["assumptions"],
     )
 
 
@@ -214,6 +354,13 @@ def create_app() -> FastAPI:
             "version": "0.1.0",
             "docs": "/docs",
             "models_endpoint": "/models",
+            "scenario_definition_endpoint": "/scenario-engine/define",
+            "scenario_library_endpoint": "/scenario-library/templates",
+            "source_endpoint": "/source-models/solve",
+            "dispersion_endpoint": "/dispersion-models/solve",
+            "fire_explosion_endpoint": "/fire-explosion-models/solve",
+            "effects_endpoint": "/effect-models/solve",
+            "visualization_endpoint": "/visualization/solve",
             "gis_endpoint": "/gis/scenarios/evaluate",
             "impact_zones_endpoint": "/gis/impact-zones",
         }
@@ -268,6 +415,58 @@ def create_app() -> FastAPI:
             }
             for scenario_type, default_model_id in DEFAULT_SCENARIO_MODELS.items()
         }
+
+    @app.post("/scenario-engine/define", response_model=ScenarioDefinitionResponse)
+    def define_scenario(request: ScenarioDefinitionRequest) -> ScenarioDefinitionResponse:
+        try:
+            scenario = build_scenario_definition(request.model_dump(exclude_none=True))
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return ScenarioDefinitionResponse(scenario=scenario)
+
+    @app.get("/scenario-library/templates", response_model=list[TemplateSummary])
+    def get_scenario_templates() -> list[TemplateSummary]:
+        return [TemplateSummary(**template) for template in list_templates()]
+
+    @app.post("/source-models/solve", response_model=ServiceResponse)
+    def solve_source(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = solve_source_model(request.model_type, request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response(request.model_type, outputs, SOURCE_MODEL_METADATA)
+
+    @app.post("/dispersion-models/solve", response_model=ServiceResponse)
+    def solve_dispersion(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = solve_dispersion_model(request.model_type, request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response(request.model_type, outputs, DISPERSION_MODEL_METADATA)
+
+    @app.post("/fire-explosion-models/solve", response_model=ServiceResponse)
+    def solve_fire_explosion(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = solve_fire_explosion_model(request.model_type, request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response(request.model_type, outputs, FIRE_EXPLOSION_METADATA)
+
+    @app.post("/effect-models/solve", response_model=ServiceResponse)
+    def solve_effects(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = solve_effect_model(request.model_type, request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response(request.model_type, outputs, EFFECT_MODEL_METADATA)
+
+    @app.post("/visualization/solve", response_model=VisualizationResponse)
+    def solve_visualization(request: VisualizationRequest) -> VisualizationResponse:
+        try:
+            payload = build_visualization_layer(request.layer_type, request.inputs)
+        except (ModelInputError, KeyError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return VisualizationResponse(layer_type=request.layer_type, payload=payload)
 
     @app.post("/models/{model_id}/calculate", response_model=CalculationResponse)
     def calculate(model_id: str, request: CalculationRequest) -> CalculationResponse:

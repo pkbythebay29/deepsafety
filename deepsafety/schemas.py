@@ -125,3 +125,53 @@ class ImpactZoneResponse(BaseModel):
     constants: list[ConstantMetadata] = Field(default_factory=list)
     equations: list[str] = Field(default_factory=list)
     geojson: dict[str, Any]
+
+
+class ScenarioDefinitionRequest(BaseModel):
+    incident_type: str
+    classification: str
+    inventory: dict[str, Any] = Field(default_factory=dict)
+    equipment: dict[str, Any] = Field(default_factory=dict)
+    failure_mode: str | None = None
+    meteorology: dict[str, Any] = Field(default_factory=dict)
+    release_height_m: float | None = None
+    topography: str | None = None
+    release_duration_s: float | None = None
+    conservative_mode: bool = False
+
+
+class ScenarioDefinitionResponse(BaseModel):
+    scenario: dict[str, Any]
+
+
+class ServiceRequest(BaseModel):
+    model_type: str
+    inputs: dict[str, Any] = Field(default_factory=dict)
+
+
+class ServiceResponse(BaseModel):
+    model_type: str
+    outputs: dict[str, Any] = Field(default_factory=dict)
+    equations: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+
+
+class TemplateSummary(BaseModel):
+    id: str
+    name: str
+    incident_type: str
+    summary: str
+    default_inventory: dict[str, Any] = Field(default_factory=dict)
+    default_equipment: dict[str, Any] = Field(default_factory=dict)
+    default_failure_mode: str
+    recommended_services: list[str] = Field(default_factory=list)
+
+
+class VisualizationRequest(BaseModel):
+    layer_type: str
+    inputs: dict[str, Any] = Field(default_factory=dict)
+
+
+class VisualizationResponse(BaseModel):
+    layer_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)

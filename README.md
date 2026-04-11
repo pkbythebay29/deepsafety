@@ -33,9 +33,66 @@ The HTTP service now exposes:
 - `POST /models/{model_id}/calculate` for direct model execution
 - `GET /constants` and `GET /constants/{model_id}` for the modifiable default constants registry
 - `GET /scenarios` for scenario-driven discovery
+- `POST /scenario-engine/define` for incident builder + classification normalization
+- `GET /scenario-library/templates` for prebuilt scenario templates
+- `POST /source-models/solve` for source-term screening models
+- `POST /dispersion-models/solve` for plume, puff, and dense-gas screening
+- `POST /fire-explosion-models/solve` for fire and explosion screening models
+- `POST /effect-models/solve` for toxic, thermal, and explosion effects
+- `POST /visualization/solve` for plume maps, contours, and time-evolution payloads
 - `POST /gis/scenarios/evaluate` for source-pin and receptor-pin workflows
+- `POST /gis/impact-zones` for map-ready impact circles
 
 Each model documents the equations used and the constants applied in the response itself.
+
+## Implemented Service Layers
+
+### Scenario Definition Engine
+
+- Incident types: `pipe_rupture`, `tank_leak`, `vessel_rupture`, `relief_discharge`
+- Scenario classifications: `realistic_case`, `worst_case`
+- Worst-case defaults include a 10-minute release, ground-level release, `1.5 m/s` wind, and `F` stability screening assumptions
+- Inputs supported: inventory, equipment, failure mode, meteorology, release height, topography, conservative mode
+
+### Source Model Service
+
+- Gas and vapor release:
+  choked flow, non-choked compressible flow, pipe/hole-style discharge
+- Liquid release:
+  tank-hole gravity discharge, pressurized liquid release
+- Flashing and two-phase:
+  flash fraction, vapor mass, rainout mass
+- Pool formation:
+  free-spreading or diked pool area
+- Evaporation:
+  heat-transfer-limited and mass-transfer-limited screening models
+
+### Dispersion Modeling Service
+
+- `gaussian_plume`
+- `gaussian_puff`
+- `dense_gas`
+
+Derived outputs include plume width, maximum concentration location, and threshold-distance screening where applicable.
+
+### Fire And Explosion Modeling Service
+
+- Fire:
+  `jet_fire`, `pool_fire`, `fireball_bleve`
+- Explosion:
+  `tnt_equivalency`, `multi_energy`, `vce`
+
+### Effect Modeling Service
+
+- `toxic_probit`
+- `thermal_probit`
+- `explosion_probit`
+
+### Visualization Layer
+
+- `plume_map`
+- `risk_contours`
+- `time_evolution`
 
 ## Implemented Models
 

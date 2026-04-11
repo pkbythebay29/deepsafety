@@ -2,6 +2,8 @@ import pytest
 
 from deepsafety.catalog import run_model
 from deepsafety.dispersion.neutrally_buoyant import calculate_sigma_y, calculate_sigma_z
+from deepsafety.dispersion_service import solve_dispersion_model
+from deepsafety.source_models import solve_source_model
 
 
 def test_flammability_limits_match_reference_temperature() -> None:
@@ -130,3 +132,59 @@ def test_leak_screening_radius_grows_with_release_mass() -> None:
     )
 
     assert larger_release_outputs["impact_radius_m"] > smaller_release_outputs["impact_radius_m"]
+
+
+def test_conservative_source_mode_increases_gas_release_rate() -> None:
+    base = solve_source_model(
+        "gas_release",
+        {
+            "diameter_m": 0.02,
+            "upstream_pressure_pa": 5_000_000,
+            "downstream_pressure_pa": 101_325,
+            "temperature_k": 288.15,
+            "heat_capacity_ratio": 1.3,
+            "molecular_weight_kg_kmol": 16.04,
+            "duration_s": 60,
+            "conservative_mode": False,
+        },
+    )
+    conservative = solve_source_model(
+        "gas_release",
+        {
+            "diameter_m": 0.02,
+            "upstream_pressure_pa": 5_000_000,
+            "downstream_pressure_pa": 101_325,
+            "temperature_k": 288.15,
+            "heat_capacity_ratio": 1.3,
+            "molecular_weight_kg_kmol": 16.04,
+            "duration_s": 60,
+            "conservative_mode": True,
+        },
+    )
+
+    assert conservative["release_rate_kg_s"] > base["release_rate_kg_s"]
+
+
+def test_gaussian_plume_threshold_distance_increases_when_threshold_drops() -> None:
+    higher_threshold = solve_dispersion_model(
+        "gaussian_plume",
+        {
+            "release_rate_kg_s": 2.0,
+            "wind_speed_m_s": 3.0,
+            "x_m": 200,
+            "stability_class": "D",
+            "threshold_kg_m3": 1e-4,
+        },
+    )
+    lower_threshold = solve_dispersion_model(
+        "gaussian_plume",
+        {
+            "release_rate_kg_s": 2.0,
+            "wind_speed_m_s": 3.0,
+            "x_m": 200,
+            "stability_class": "D",
+            "threshold_kg_m3": 1e-5,
+        },
+    )
+
+    assert lower_threshold["distance_to_threshold_m"] > higher_threshold["distance_to_threshold_m"]
