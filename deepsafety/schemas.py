@@ -193,3 +193,31 @@ class ServiceMetadata(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
     constants: list[ConstantMetadata] = Field(default_factory=list)
     references: list[ReferenceMetadata] = Field(default_factory=list)
+
+
+class SignAnalysisRequest(BaseModel):
+    image_base64: str | None = None
+    image_media_type: str | None = None
+    observed_text: str | None = None
+    locale: str | None = None
+    site_context: str | None = None
+    topography: str | None = None
+    stability_class: str | None = None
+    wind_speed_m_s: float | None = None
+
+
+class SignAnalysisResponse(BaseModel):
+    sign_type: str
+    confidence: float
+    normalized_text: str
+    matched_terms: list[str] = Field(default_factory=list)
+    asset_type: str
+    substance_family: str
+    hazard_classes: list[str] = Field(default_factory=list)
+    recommended_services: list[str] = Field(default_factory=list)
+    recommended_models: dict[str, Any] = Field(default_factory=dict)
+    scenario_template_id: str
+    scenario_definition_seed: dict[str, Any] = Field(default_factory=dict)
+    impact_zone_seed: dict[str, Any] = Field(default_factory=dict)
+    required_parameters: list[FieldMetadata] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)

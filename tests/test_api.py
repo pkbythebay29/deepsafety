@@ -80,6 +80,18 @@ def test_constants_endpoint_lists_defaults() -> None:
     assert any(item["name"] == "fire.default_radiative_fraction" for item in payload)
 
 
+def test_service_catalog_lists_extended_effect_models() -> None:
+    response = client.get("/service-catalog")
+
+    assert response.status_code == 200
+    payload = response.json()
+    effect_model_types = {item["model_type"] for item in payload["effect_models"]}
+    assert "toxic_dose_response" in effect_model_types
+    assert "thermal_dose_response" in effect_model_types
+    assert "explosion_dose_response" in effect_model_types
+    assert payload["sign_intelligence"][0]["model_type"] == "sign_analysis"
+
+
 def test_calculate_point_source_heat_flux_with_constant_override() -> None:
     response = client.post(
         "/models/fire.point_source_heat_flux/calculate",
@@ -229,3 +241,57 @@ def test_leak_impact_zones_accept_gas_line_style_asset_inputs() -> None:
     assert payload["model"]["id"] == "dispersion.gaussian_puff_screening_radius"
     assert payload["zones"][0]["radius_m"] >= 0
     assert payload["zones"][0]["outputs"]["screening_release_mass_kg"] == pytest.approx(72.0)
+
+
+def test_leak_impact_zones_can_derive_release_from_pressure_temperature_and_geometry() -> None:
+    response = client.post(
+        "/gis/impact-zones",
+        json={
+            "scenario_type": "leak",
+            "source": {
+                "latitude": 51.5074,
+                "longitude": -0.1278,
+                "label": "Pipeline",
+            },
+            "asset": {
+                "line_pressure_kpa": 6000,
+                "downstream_pressure_pa": 101325,
+                "gas_temperature_c": 20,
+                "heat_capacity_ratio": 1.31,
+                "molecular_weight_kg_kmol": 18,
+                "diameter_m": 0.015,
+                "pipe_length_m": 30,
+                "leak_duration_s": 45,
+                "inventory_mass_kg": 250,
+                "stability_class": "D",
+            },
+            "criteria": [
+                {"label": "Concern threshold", "threshold": 0.02, "unit": "kg/m^3"},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["zones"][0]["radius_m"] >= 0
+    assert payload["zones"][0]["outputs"]["screening_release_mass_kg"] > 0
+
+
+def test_sign_analysis_endpoint_returns_pipeline_leak_seed() -> None:
+    response = client.post(
+        "/signs/analyze",
+        json={
+            "observed_text": "Warning Gas Pipeline Present High Pressure Gas",
+            "site_context": "Buried line marker near road crossing",
+            "topography": "urban",
+            "stability_class": "D",
+            "wind_speed_m_s": 3.0,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["asset_type"] == "pipeline"
+    assert payload["scenario_template_id"] == "pipeline_leak"
+    assert payload["impact_zone_seed"]["scenario_type"] == "leak"
+    assert any(item["name"] == "line_pressure_kpa" for item in payload["required_parameters"])

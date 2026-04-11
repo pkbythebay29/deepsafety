@@ -1,23 +1,36 @@
 # DeepSafety
-**DeepSafety** is an open-source process safety consequence-analysis platform. It includes a Python library, a FastAPI service, a GitHub Pages GIS console, an MCP bridge, and a Jupyter notebook so the same calculations can be embedded into web apps, engineering tools, agent workflows, and exploratory engineering analysis.
+**DeepSafety** is an open-source process safety consequence-analysis platform. It includes a Python library, a FastAPI service, a browser-local runtime for GitHub Pages, an MCP bridge, and a Jupyter notebook so the same calculations can be embedded into web apps, engineering tools, agent workflows, and exploratory engineering analysis.
 
-## Features (Planned and In Progress)
+## Implemented API Capabilities
 
-- Atmospheric dispersion models (Pasquill–Gifford)
-  - Puff and plume models (ground level and elevated sources)
-  - Neutrally buoyant and dense gas behavior
+- Atmospheric dispersion models (Pasquill-Gifford)
+  - Puff and plume models
+  - ground-level and elevated-source screening
+  - dense-gas screening and neutrally buoyant screening relations
 - Toxic effect criteria
-  - AEGLs, ERPGs, IDLH, TLVs, PELs, and toxic endpoints
+  - starter toxic criteria registry for AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoints
+  - toxic probit and toxic dose-response services
 - Flammability and ignition analysis
-  - Limits, autoignition, inerting, ignition energy
+  - flammability limits
+  - autoignition screening
+  - inerting requirement screening
+  - ignition energy screening
 - Explosion modeling
-  - TNT equivalency, VCEs, BLEVEs, deflagration/detonation
-  - Blast damage, overpressure, and mitigation
+  - TNT equivalency
+  - VCE
+  - BLEVE fireball
+  - deflagration screening
+  - detonation screening
+  - blast damage screening
+  - mitigation screening
 - Fire triangle modeling and spray/mist behavior
+  - fire triangle screening
+  - spray/mist fire screening
 - Release prevention and emergency response planning
+  - release prevention screening
+  - emergency response planning screening
 
 ## License
-
 This project is licensed under the MIT License. 
 
 ## Contributing
@@ -39,6 +52,9 @@ The HTTP service now exposes:
 - `POST /dispersion-models/solve` for plume, puff, and dense-gas screening
 - `POST /fire-explosion-models/solve` for fire and explosion screening models
 - `POST /effect-models/solve` for toxic, thermal, and explosion effects
+- `POST /toxic-criteria/lookup` for starter AEGL, ERPG, IDLH, TLV, PEL, and toxic-endpoint lookup
+- `POST /prevention-response-models/solve` for ignition, inerting, spray/mist, prevention, and emergency-response screening
+- `POST /signs/analyze` for sign intelligence that turns OCR or manually entered sign text into a leak-ready scenario seed
 - `POST /visualization/solve` for plume maps, contours, and time-evolution payloads
 - `POST /gis/scenarios/evaluate` for source-pin and receptor-pin workflows
 - `POST /gis/impact-zones` for map-ready impact circles
@@ -80,15 +96,45 @@ Derived outputs include plume width, maximum concentration location, and thresho
 - Fire:
   `jet_fire`, `pool_fire`, `fireball_bleve`
 - Explosion:
-  `tnt_equivalency`, `multi_energy`, `vce`
+  `tnt_equivalency`, `multi_energy`, `vce`, `deflagration_screening`, `detonation_screening`
+- Blast and mitigation:
+  `blast_damage_screening`, `mitigation_screening`
 - VCE complexity inputs:
   cloud mass, ignition delay, and congestion factor
 
 ### Effect Modeling Service
 
 - `toxic_probit`
+- `toxic_dose_response`
 - `thermal_probit`
+- `thermal_dose_response`
 - `explosion_probit`
+- `explosion_dose_response`
+
+Population-based summaries are supported through `population_distribution` or `population_count` inputs so client applications can estimate expected burn cases or expected fatalities by exposure zone.
+
+### Toxic Criteria Service
+
+- `toxic_criteria_lookup`
+- starter registry covers AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoint lookup for selected chemicals
+- request-level criteria overrides are supported for organization-specific datasets
+
+### Prevention And Response Service
+
+- `fire_triangle_screening`
+- `autoignition_screening`
+- `inerting_requirement`
+- `ignition_energy_screening`
+- `spray_mist_screening`
+- `release_prevention_screening`
+- `emergency_response_planning`
+
+### Sign Intelligence
+
+- `sign_analysis`
+- accepts sign OCR text or manually entered sign text plus optional sign image payload
+- classifies common gas, pipeline, flammable-gas, high-pressure-gas, and toxic-gas signage
+- returns a scenario-definition seed, impact-zone seed, recommended services, and required next parameters
 
 ### Visualization Layer
 
@@ -209,7 +255,7 @@ Default constants include:
 
 Each request can override model-specific constants without changing the endpoint shape.
 
-## GIS and GitHub Pages
+## Browser App and GitHub Pages
 
 The static client lives in [`docs/`](docs). It is designed for GitHub Pages and provides:
 
@@ -220,14 +266,23 @@ The static client lives in [`docs/`](docs). It is designed for GitHub Pages and 
 - leak and fire asset configuration from a GUI
 - impact-circle rendering from `/gis/impact-zones`
 - a configurable API base URL stored in browser local storage
-- equation and constant panels sourced from the live API
+- equation and constant panels sourced from the Deep Safety API contract
+- a browser-local runtime (`browser://local`) so the core API surface can run without an external backend
+- sign-photo workflow support through `/signs/analyze` once OCR or manual sign text is supplied
 
-GitHub Pages can host the static UI and docs, but not the Python API itself. The intended deployment split is:
+Deep Safety now supports two static-site runtime patterns:
 
-- GitHub Pages for the static GIS console
-- a separate Python host for the FastAPI backend
+- GitHub Pages with the browser-local runtime for client-side calculations
+- GitHub Pages calling a separately deployed Python API when you want a shared backend
 
 The workflow at [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) publishes the `docs/` folder.
+
+The Pages site is split into separate pages:
+
+- `index.html` for the product landing page
+- `app.html` for the interactive map workflow
+- `api-docs.html` for API-first documentation
+- `readme.html` for a web version of the repository README
 
 ## Jupyter Notebook
 
@@ -305,7 +360,10 @@ The MCP bridge is implemented in [`deepsafety/mcp_server.py`](deepsafety/mcp_ser
 - listing models
 - fetching model metadata
 - running calculations
-- evaluating GIS scenarios
+- evaluating map scenarios
 - listing constants
+- generating impact zones
+- analyzing signs into leak-ready scenario seeds
 
 Point it at the API with `DEEPSAFETY_API_BASE`, then launch it with the `deepsafety-mcp` entry point after installation.
+

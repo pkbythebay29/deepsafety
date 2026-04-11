@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Safety API Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>API docs</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./app.html">App</a>
+          <a class="is-active" href="./api-docs.html">API Docs</a>
+          <a href="./readme.html">README</a>
+        </div>
+      </nav>
+
+      <header class="page-title">
+        <p class="eyebrow">API Docs</p>
+        <h1>Use Deep Safety immediately.</h1>
+        <p>
+          Deep Safety exposes one consistent contract across the Python package,
+          HTTP API, MCP bridge, and browser-local runtime. The endpoints below
+          are designed to be application-ready and agent-friendly.
+        </p>
+      </header>
+
+      <section class="cards-grid">
+        <article class="feature-card">
+          <h3>HTTP runtime</h3>
+          <p>Deploy FastAPI with Docker or your own host and call the REST endpoints directly.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Browser-local runtime</h3>
+          <p>Use `browser://local` in the site or call the browser adapter to run calculations client-side.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Agent surface</h3>
+          <p>The MCP server wraps the same API so agents can discover models and run calculations safely.</p>
+        </article>
+      </section>
+
+      <section class="card stack">
+        <div class="panel-header">
+          <h2>Quick Start</h2>
+          <p>Three common ways to work with Deep Safety.</p>
+        </div>
+        <div class="two-col">
+          <div class="code-block">
+            <pre><code># Python package
+pip install deepsafety
+
+from deepsafety import DeepSafetyClient
+client = DeepSafetyClient("http://127.0.0.1:8000")
+catalog = client.get_service_catalog()</code></pre>
+          </div>
+          <div class="code-block">
+            <pre><code>// Browser-local runtime
+const result = await window.DeepSafetyBrowserApi.request(
+  "POST",
+  "/effect-models/solve",
+  {
+    model_type: "thermal_probit",
+    inputs: { heat_flux_kw_m2: 12.5, exposure_time_s: 30 }
+  }
+);</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="panel-header">
+          <h2>Core Endpoints</h2>
+          <p>These are the main surfaces applications usually integrate first.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Purpose</th>
+                <th>Key payload fields</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>GET /models</code></td>
+                <td>Discover available implemented and planned models.</td>
+                <td><code>include_planned</code></td>
+              </tr>
+              <tr>
+                <td><code>GET /models/{model_id}</code></td>
+                <td>Inspect equations, constants, inputs, outputs, and references.</td>
+                <td><code>model_id</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /scenario-engine/define</code></td>
+                <td>Normalize realistic or worst-case incident definitions.</td>
+                <td><code>incident_type</code>, <code>classification</code>, <code>inventory</code>, <code>equipment</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /source-models/solve</code></td>
+                <td>Compute release rate, total mass, and phase state.</td>
+                <td><code>model_type</code>, <code>inputs</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /dispersion-models/solve</code></td>
+                <td>Compute screening concentration fields and threshold distances.</td>
+                <td><code>gaussian_plume</code>, <code>gaussian_puff</code>, <code>dense_gas</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /fire-explosion-models/solve</code></td>
+                <td>Convert release or cloud energy into fire and blast hazards.</td>
+                <td><code>jet_fire</code>, <code>pool_fire</code>, <code>fireball_bleve</code>, <code>tnt_equivalency</code>, <code>multi_energy</code>, <code>vce</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /effect-models/solve</code></td>
+                <td>Translate exposure into human impact with curves and population summaries.</td>
+                <td><code>toxic_probit</code>, <code>toxic_dose_response</code>, <code>thermal_probit</code>, <code>thermal_dose_response</code>, <code>explosion_probit</code>, <code>explosion_dose_response</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /toxic-criteria/lookup</code></td>
+                <td>Lookup starter AEGL, ERPG, IDLH, TLV, PEL, and toxic-endpoint values.</td>
+                <td><code>chemical</code>, optional <code>criteria_names</code>, optional <code>criteria_overrides</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /prevention-response-models/solve</code></td>
+                <td>Run ignition, inerting, spray/mist, prevention, and response planning screening models.</td>
+                <td><code>fire_triangle_screening</code>, <code>autoignition_screening</code>, <code>inerting_requirement</code>, <code>ignition_energy_screening</code>, <code>spray_mist_screening</code>, <code>release_prevention_screening</code>, <code>emergency_response_planning</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /signs/analyze</code></td>
+                <td>Classify a sign from OCR text or manual text and return a leak-ready scenario seed.</td>
+                <td><code>observed_text</code>, optional <code>image_base64</code>, <code>site_context</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /visualization/solve</code></td>
+                <td>Build plume maps, heatmaps, contours, and time-evolution payloads.</td>
+                <td><code>layer_type</code>, <code>inputs</code></td>
+              </tr>
+              <tr>
+                <td><code>POST /gis/impact-zones</code></td>
+                <td>Create map-ready impact circles for leak and fire scenarios.</td>
+                <td><code>scenario_type</code>, <code>source</code>, <code>asset</code>, <code>criteria</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="docs-grid">
+        <article class="endpoint-card">
+          <h3>Scenario Definition</h3>
+          <p>
+            Supports <code>pipe_rupture</code>, <code>tank_leak</code>,
+            <code>vessel_rupture</code>, and <code>relief_discharge</code> with
+            <code>realistic_case</code> and <code>worst_case</code>
+            classifications.
+          </p>
+          <pre><code>{
+  "incident_type": "pipe_rupture",
+  "classification": "worst_case",
+  "inventory": { "mass_kg": 1000, "phase": "gas" },
+  "equipment": { "diameter_m": 0.15 },
+  "meteorology": { "wind_speed_m_s": 1.5, "stability_class": "F" }
+}</code></pre>
+        </article>
+
+        <article class="endpoint-card">
+          <h3>Effect Models</h3>
+          <p>
+            Supports point estimates and dose-response curves, plus population
+            distributions for expected case counts.
+          </p>
+          <pre><code>{
+  "model_type": "toxic_probit",
+  "inputs": {
+    "concentration_kg_m3": 0.12,
+    "exposure_duration_s": 180,
+    "population_distribution": [
+      { "label": "Control Room", "population": 12, "concentration_kg_m3": 0.08, "exposure_duration_s": 240 }
+    ]
+          }
+}</code></pre>
+        </article>
+      </section>
+
+      <section class="card stack">
+        <div class="panel-header">
+          <h2>Sign Intelligence</h2>
+          <p>Turn field signage into a scenario seed that downstream tools can consume immediately.</p>
+        </div>
+        <div class="code-block">
+          <pre><code>{
+  "observed_text": "Warning Gas Pipeline Present High Pressure Gas",
+  "site_context": "Buried line marker near road crossing",
+  "stability_class": "D",
+  "wind_speed_m_s": 3.0
+}</code></pre>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <div class="panel-header">
+          <h2>Runtime Notes</h2>
+          <p>Choose the runtime that fits your application boundary.</p>
+        </div>
+        <div class="callout">
+          <strong>Browser-local:</strong> best for demos, GitHub Pages, embedded
+          tools, and lightweight client-side evaluation.
+        </div>
+        <div class="callout">
+          <strong>HTTP API:</strong> best for shared services, audit trails,
+          multi-user systems, notebooks, and agent infrastructures.
+        </div>
+        <div class="callout">
+          <strong>MCP server:</strong> best when you want tools and agents to
+          call Deep Safety through a standard tool surface.
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

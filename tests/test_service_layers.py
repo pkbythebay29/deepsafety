@@ -234,6 +234,36 @@ def test_fire_explosion_service_multi_energy_is_available() -> None:
     assert payload["overpressure_kpa"] > 0
 
 
+def test_fire_explosion_service_deflagration_and_blast_damage_are_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "deflagration_screening",
+            "inputs": {
+                "cloud_mass_kg": 250,
+                "heat_of_combustion_kj_kg": 46000,
+                "flame_speed_m_s": 40,
+                "confinement_factor": 1.3,
+                "distance_m": 80,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    overpressure = response.json()["outputs"]["overpressure_kpa"]
+    damage_response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "blast_damage_screening",
+            "inputs": {"overpressure_kpa": overpressure},
+        },
+    )
+
+    assert damage_response.status_code == 200
+    payload = damage_response.json()["outputs"]
+    assert payload["structural_damage"] in {"minor", "moderate", "major", "severe"}
+
+
 def test_effect_model_thermal_probit_returns_probability() -> None:
     response = client.post(
         "/effect-models/solve",
@@ -249,6 +279,130 @@ def test_effect_model_thermal_probit_returns_probability() -> None:
     assert response.status_code == 200
     payload = response.json()["outputs"]
     assert 0 <= payload["burn_probability"] <= 1
+
+
+def test_effect_model_toxic_probit_supports_population_distribution() -> None:
+    response = client.post(
+        "/effect-models/solve",
+        json={
+            "model_type": "toxic_probit",
+            "inputs": {
+                "concentration_kg_m3": 2.2,
+                "exposure_duration_s": 180,
+                "population_distribution": [
+                    {
+                        "id": "control-room",
+                        "label": "Control Room",
+                        "population": 12,
+                        "concentration_kg_m3": 1.8,
+                        "exposure_duration_s": 240,
+                    },
+                    {
+                        "id": "loading-bay",
+                        "label": "Loading Bay",
+                        "population": 4,
+                        "concentration_kg_m3": 2.6,
+                        "exposure_duration_s": 120,
+                    },
+                ],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["population_total"] == 16.0
+    assert payload["expected_fatalities"] > 0
+    assert len(payload["population_results"]) == 2
+
+
+def test_effect_model_thermal_dose_response_returns_curve() -> None:
+    response = client.post(
+        "/effect-models/solve",
+        json={
+            "model_type": "thermal_dose_response",
+            "inputs": {
+                "exposure_time_s": 30,
+                "min_heat_flux_kw_m2": 2.0,
+                "max_heat_flux_kw_m2": 12.0,
+                "points": 4,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert len(payload["curve"]) == 4
+    assert payload["curve"][0]["heat_flux_kw_m2"] == 2.0
+    assert payload["curve"][-1]["heat_flux_kw_m2"] == 12.0
+
+
+def test_effect_model_explosion_probit_supports_population_count() -> None:
+    response = client.post(
+        "/effect-models/solve",
+        json={
+            "model_type": "explosion_probit",
+            "inputs": {
+                "overpressure_kpa": 35,
+                "population_count": 25,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["population_total"] == 25.0
+    assert payload["expected_fatalities"] >= 0
+
+
+def test_toxic_criteria_lookup_returns_registry_values() -> None:
+    response = client.post(
+        "/toxic-criteria/lookup",
+        json={
+            "model_type": "toxic_criteria_lookup",
+            "inputs": {
+                "chemical": "chlorine",
+                "criteria_names": ["aegl_2", "erpg_2", "idlh"],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["chemical"] == "chlorine"
+    assert payload["criteria"]["aegl_2"] > 0
+    assert payload["criteria"]["idlh"] > 0
+
+
+def test_prevention_response_models_cover_ignition_and_emergency_planning() -> None:
+    ignition = client.post(
+        "/prevention-response-models/solve",
+        json={
+            "model_type": "ignition_energy_screening",
+            "inputs": {
+                "source_energy_mj": 3.0,
+                "minimum_ignition_energy_mj": 0.28,
+            },
+        },
+    )
+    emergency = client.post(
+        "/prevention-response-models/solve",
+        json={
+            "model_type": "emergency_response_planning",
+            "inputs": {
+                "population_exposed": 120,
+                "response_team_time_s": 300,
+                "shelter_in_place_time_s": 180,
+                "evacuation_time_s": 420,
+                "release_duration_s": 900,
+            },
+        },
+    )
+
+    assert ignition.status_code == 200
+    assert ignition.json()["outputs"]["ignition_likelihood"] == "credible"
+    assert emergency.status_code == 200
+    assert emergency.json()["outputs"]["preferred_action"] == "shelter_in_place"
 
 
 def test_visualization_risk_contours_returns_geojson() -> None:

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Safety README</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>README</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./app.html">App</a>
+          <a href="./api-docs.html">API Docs</a>
+          <a class="is-active" href="./readme.html">README</a>
+        </div>
+      </nav>
+
+      <header class="page-title">
+        <p class="eyebrow">README</p>
+        <h1>Deep Safety at a glance.</h1>
+        <p>
+          This page mirrors the repository README in a web-friendly format so
+          users can understand installation, runtime options, and the current
+          feature set before they integrate Deep Safety into their own tools.
+        </p>
+      </header>
+
+      <section class="docs-grid">
+        <article class="card stack">
+          <div>
+            <h2>What it is</h2>
+            <p class="doc-copy">
+              Deep Safety is a process safety consequence-analysis platform with
+              one install target, one API contract, and multiple execution
+              modes: Python package, FastAPI service, browser-local runtime,
+              GitHub Pages application, Jupyter notebook, and MCP bridge.
+            </p>
+          </div>
+          <div>
+            <h2>Implemented layers</h2>
+            <ul class="doc-list">
+              <li>Scenario definition engine</li>
+              <li>Scenario library</li>
+              <li>Source model service</li>
+              <li>Dispersion modeling service</li>
+              <li>Fire and explosion modeling service</li>
+              <li>Effect modeling service</li>
+              <li>Visualization layer</li>
+            </ul>
+          </div>
+          <div>
+            <h2>Package and runtime</h2>
+            <div class="code-block">
+              <pre><code>pip install deepsafety
+pip install "deepsafety[jupyter]"
+
+deepsafety-api
+deepsafety-mcp
+python -m deepsafety</code></pre>
+            </div>
+          </div>
+        </article>
+
+        <article class="card stack">
+          <div>
+            <h2>Deployment options</h2>
+            <ul class="doc-list">
+              <li>GitHub Pages for the static web experience</li>
+              <li>Docker container for the FastAPI service</li>
+              <li>Local Python install for notebooks and scripts</li>
+              <li>MCP server for tool-driven and agent-driven use</li>
+            </ul>
+          </div>
+          <div>
+            <h2>Container quick start</h2>
+            <div class="code-block">
+              <pre><code>docker build -t deepsafety .
+docker run --rm -p 8000:8000 deepsafety
+
+# or
+docker compose up --build</code></pre>
+            </div>
+          </div>
+          <div>
+            <h2>Notebook entry point</h2>
+            <p class="doc-copy">
+              Use <code>notebooks/deepsafety_explorer.ipynb</code> or import the
+              package directly in Jupyter for model discovery and quick
+              calculations.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <section class="card stack">
+        <div class="panel-header">
+          <h2>Current model coverage</h2>
+          <p>Aligned with the repository state as of this build.</p>
+        </div>
+        <div class="two-col">
+          <div>
+            <h3>Source and dispersion</h3>
+            <ul class="doc-list">
+              <li>Gas release: choked, non-choked, pipe, hole, relief, vessel blowdown</li>
+              <li>Liquid release: tank hole, pipe flow, gravity-driven, pressure-driven</li>
+              <li>Flashing and two-phase screening</li>
+              <li>Pool formation and evaporation screening</li>
+              <li>Gaussian plume, Gaussian puff, dense-gas screening</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Hazards and effects</h3>
+            <ul class="doc-list">
+              <li>Jet fire, pool fire, fireball BLEVE</li>
+              <li>TNT equivalency, multi-energy, VCE</li>
+              <li>Toxic, thermal, and explosion probit models</li>
+              <li>Toxic, thermal, and explosion dose-response curves</li>
+              <li>Population-based expected cases from effect models</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        For exact endpoint contracts use <a href="./api-docs.html">API Docs</a>.
+        For the interactive experience use <a href="./app.html">the app</a>.
+      </p>
+    </div>
+  </body>
+</html>

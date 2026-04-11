@@ -1,6 +1,9 @@
 const apiBaseInput = document.getElementById("apiBaseUrl");
 const saveApiBaseButton = document.getElementById("saveApiBase");
 const mapUploadInput = document.getElementById("mapUpload");
+const signPhotoInput = document.getElementById("signPhoto");
+const signObservedTextInput = document.getElementById("signObservedText");
+const analyzeSignButton = document.getElementById("analyzeSign");
 const scenarioTypeSelect = document.getElementById("scenarioType");
 const modelIdSelect = document.getElementById("modelId");
 const scenarioFields = document.getElementById("scenarioFields");
@@ -14,7 +17,9 @@ const resultsContainer = document.getElementById("results");
 const modelDocsContainer = document.getElementById("modelDocs");
 
 const storedApiBase =
-  window.localStorage.getItem("deepsafety-api-base") || "http://127.0.0.1:8000";
+  window.localStorage.getItem("deepsafety-api-base") ||
+  window.DeepSafetyBrowserApi?.defaultBaseUrl ||
+  "browser://local";
 apiBaseInput.value = storedApiBase;
 
 const state = {
@@ -25,6 +30,7 @@ const state = {
   zoneLayers: [],
   overlayLayer: null,
   modelsByScenario: {},
+  signPhotoDataUrl: null,
 };
 
 const map = L.map("map", { zoomControl: false }).setView([51.505, -0.09], 5);
@@ -37,6 +43,10 @@ function apiBase() {
   return apiBaseInput.value.replace(/\/$/, "");
 }
 
+function isBrowserLocalMode() {
+  return apiBase().startsWith("browser://");
+}
+
 function setStatus(message) {
   resultsContainer.innerHTML = `<div class="status">${message}</div>`;
 }
@@ -44,21 +54,100 @@ function setStatus(message) {
 function getScenarioConfig(type) {
   if (type === "fire") {
     return [
-      { key: "burning_rate_kg_s", label: "Burning rate (kg/s)", value: "4.5" },
-      { key: "heat_of_combustion_kj_kg", label: "Heat of combustion (kJ/kg)", value: "46000" },
-      { key: "impact_threshold_kw_m2", label: "Impact threshold (kW/m^2)", value: "12.5" },
+      {
+        key: "burning_rate_kg_s",
+        label: "Burning rate (kg/s)",
+        value: "4.5",
+        help: "Mass burning rate used by the fire radiation model.",
+      },
+      {
+        key: "heat_of_combustion_kj_kg",
+        label: "Heat of combustion (kJ/kg)",
+        value: "46000",
+        help: "Energy released per kilogram of fuel burned.",
+      },
+      {
+        key: "impact_threshold_kw_m2",
+        label: "Impact threshold (kW/m^2)",
+        value: "12.5",
+        help: "Thermal radiation threshold used to draw the impact circle.",
+      },
     ];
   }
 
   return [
-    { key: "line_pressure_kpa", label: "Line pressure (kPa)", value: "6000" },
-    { key: "mass_flow_kg_s", label: "Gas flow (kg/s)", value: "1.2" },
-    { key: "gas_temperature_c", label: "Gas temperature (degC)", value: "18" },
-    { key: "leak_duration_s", label: "Leak duration (s)", value: "60" },
-    { key: "stability_class", label: "Stability class (A-F)", value: "D" },
-    { key: "impact_threshold_kg_m3", label: "Concern threshold (kg/m^3)", value: "0.02" },
-    { key: "Q", label: "Optional receptor screening release mass (kg)", value: "25" },
-    { key: "u", label: "Optional receptor screening wind speed (m/s)", value: "3.5" },
+    {
+      key: "line_pressure_kpa",
+      label: "Line pressure (kPa)",
+      value: "6000",
+      help: "Internal line pressure used to estimate gas release if a leak occurs.",
+    },
+    {
+      key: "gas_temperature_c",
+      label: "Gas temperature (degC)",
+      value: "18",
+      help: "Gas temperature at release conditions.",
+    },
+    {
+      key: "diameter_m",
+      label: "Line diameter (m)",
+      value: "0.015",
+      help: "Pipe or release connection diameter used in the source-term model.",
+    },
+    {
+      key: "hole_diameter_m",
+      label: "Leak hole diameter (m)",
+      value: "0.005",
+      help: "Estimated opening size for the leak itself.",
+    },
+    {
+      key: "pipe_length_m",
+      label: "Pipe length to source (m)",
+      value: "30",
+      help: "Used for simple friction-limited pipe discharge screening.",
+    },
+    {
+      key: "molecular_weight_kg_kmol",
+      label: "Molecular weight (kg/kmol)",
+      value: "28.97",
+      help: "Used to derive the gas constant for source-term calculations.",
+    },
+    {
+      key: "heat_capacity_ratio",
+      label: "Heat capacity ratio",
+      value: "1.3",
+      help: "Specific heat ratio used for choked and non-choked gas discharge screening.",
+    },
+    {
+      key: "leak_duration_s",
+      label: "Leak duration (s)",
+      value: "60",
+      help: "Duration before isolation, depletion, or intervention.",
+    },
+    {
+      key: "stability_class",
+      label: "Stability class (A-F)",
+      value: "D",
+      help: "Atmospheric stability class used for dispersion screening.",
+    },
+    {
+      key: "impact_threshold_kg_m3",
+      label: "Concern threshold (kg/m^3)",
+      value: "0.02",
+      help: "Concentration threshold used to draw the leak impact circle.",
+    },
+    {
+      key: "Q",
+      label: "Receptor screening release mass (kg)",
+      value: "25",
+      help: "Optional direct released mass used for receptor screening in the puff model.",
+    },
+    {
+      key: "u",
+      label: "Receptor screening wind speed (m/s)",
+      value: "3.5",
+      help: "Wind speed used for receptor concentration screening.",
+    },
   ];
 }
 
@@ -68,8 +157,12 @@ function renderScenarioFields() {
     .map(
       (field) => `
         <label class="field">
-          <span>${field.label}</span>
+          <span class="field-label-row">
+            <span>${field.label}</span>
+            <span class="info-badge" title="${field.help.replace(/"/g, "&quot;")}">?</span>
+          </span>
           <input data-input-key="${field.key}" value="${field.value}" />
+          <small class="field-help">${field.help}</small>
         </label>
       `,
     )
@@ -129,6 +222,10 @@ function saveApiBase() {
 }
 
 async function fetchJson(path, options = {}) {
+  if (isBrowserLocalMode()) {
+    const body = options.body ? JSON.parse(options.body) : undefined;
+    return window.DeepSafetyBrowserApi.request(options.method || "GET", path, body);
+  }
   const response = await fetch(`${apiBase()}${path}`, options);
   if (!response.ok) {
     const text = await response.text();
@@ -378,8 +475,12 @@ async function runImpactZones() {
             },
             asset: {
               line_pressure_kpa: formInputs.line_pressure_kpa,
-              mass_flow_kg_s: formInputs.mass_flow_kg_s,
               gas_temperature_c: formInputs.gas_temperature_c,
+              diameter_m: formInputs.diameter_m,
+              hole_diameter_m: formInputs.hole_diameter_m,
+              pipe_length_m: formInputs.pipe_length_m,
+              molecular_weight_kg_kmol: formInputs.molecular_weight_kg_kmol,
+              heat_capacity_ratio: formInputs.heat_capacity_ratio,
               leak_duration_s: formInputs.leak_duration_s,
               stability_class: formInputs.stability_class,
             },
@@ -436,8 +537,71 @@ function handleMapUpload(event) {
   reader.readAsDataURL(file);
 }
 
+function handleSignPhotoUpload(event) {
+  const [file] = event.target.files || [];
+  if (!file) {
+    state.signPhotoDataUrl = null;
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.signPhotoDataUrl = reader.result;
+    setStatus("Sign photo loaded. Add sign text or OCR and run sign analysis.");
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeSign() {
+  try {
+    const payload = {
+      observed_text: signObservedTextInput.value.trim(),
+      site_context: "map workflow",
+      topography: "urban",
+      stability_class: parseInputs().stability_class || "D",
+      wind_speed_m_s: parseInputs().u || 3.0,
+    };
+    if (state.signPhotoDataUrl) {
+      const [header, base64] = String(state.signPhotoDataUrl).split(",", 2);
+      payload.image_base64 = base64 || "";
+      payload.image_media_type = header?.match(/data:(.*?);base64/)?.[1] || "image/jpeg";
+    }
+
+    const result = await fetchJson("/signs/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (result.scenario_template_id === "pipeline_leak") {
+      scenarioTypeSelect.value = "leak";
+      renderScenarioFields();
+      populateModels();
+    }
+
+    renderResultsMarkup([
+      `
+        <article class="result-card">
+          <h3>Sign analysis</h3>
+          <p class="result-meta">Type: ${result.sign_type}</p>
+          <p class="result-meta">Confidence: ${result.confidence}</p>
+          <p class="result-meta">Asset: ${result.asset_type}</p>
+          <p class="result-meta">Hazards: ${result.hazard_classes.join(", ")}</p>
+          <p class="result-meta">Matched terms: ${result.matched_terms.join(", ") || "none"}</p>
+          <p class="result-meta">Next inputs: ${result.required_parameters.map((item) => item.name).join(", ")}</p>
+        </article>
+      `,
+    ]);
+    setStatus("Sign analyzed. You can now complete the seeded leak scenario inputs and run the impact circle.");
+  } catch (error) {
+    setStatus(`Sign analysis failed: ${error.message}`);
+  }
+}
+
 saveApiBaseButton.addEventListener("click", saveApiBase);
 mapUploadInput.addEventListener("change", handleMapUpload);
+signPhotoInput.addEventListener("change", handleSignPhotoUpload);
+analyzeSignButton.addEventListener("click", analyzeSign);
 scenarioTypeSelect.addEventListener("change", () => {
   renderScenarioFields();
   populateModels();
@@ -457,4 +621,4 @@ resetMapButton.addEventListener("click", resetMapState);
 
 renderScenarioFields();
 hydrateScenarioModels();
-setStatus("Place a source pin, configure the asset, and draw an impact circle.");
+setStatus("Place a source pin, configure the asset, or analyze a sign photo to seed a leak scenario.");

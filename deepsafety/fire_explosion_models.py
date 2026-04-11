@@ -37,8 +37,18 @@ def solve_fire_explosion_model(model_type: str, payload: dict[str, object]) -> d
         return _solve_multi_energy(payload)
     if model_type == "vce":
         return _solve_vce(payload)
+    if model_type == "deflagration_screening":
+        return _solve_deflagration(payload)
+    if model_type == "detonation_screening":
+        return _solve_detonation(payload)
+    if model_type == "blast_damage_screening":
+        return _solve_blast_damage(payload)
+    if model_type == "mitigation_screening":
+        return _solve_mitigation(payload)
     raise ModelInputError(
-        "Fire/explosion model must be one of jet_fire, pool_fire, fireball_bleve, tnt_equivalency, multi_energy, or vce."
+        "Fire/explosion model must be one of jet_fire, pool_fire, fireball_bleve, tnt_equivalency, "
+        "multi_energy, vce, deflagration_screening, detonation_screening, "
+        "blast_damage_screening, or mitigation_screening."
     )
 
 
@@ -151,4 +161,77 @@ def _solve_vce(payload: dict[str, object]) -> dict[str, object]:
         "tnt_equivalent_mass_kg": round(tnt_mass_kg, 6),
         "scaled_distance": round(scaled_distance, 6),
         "overpressure_kpa": round(overpressure_kpa, 6),
+    }
+
+
+def _solve_deflagration(payload: dict[str, object]) -> dict[str, object]:
+    cloud_mass_kg = _positive_float(payload, "cloud_mass_kg")
+    heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
+    flame_speed_m_s = _positive_float(payload, "flame_speed_m_s")
+    confinement_factor = float(payload.get("confinement_factor", 1.0))
+    distance_m = _positive_float(payload, "distance_m")
+    effective_efficiency = min(0.2, 0.02 + 0.0002 * flame_speed_m_s + 0.03 * confinement_factor)
+    tnt_mass_kg = cloud_mass_kg * heat_of_combustion_kj_kg * effective_efficiency / TNT_HEAT_KJ_KG
+    scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
+    overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance)
+    return {
+        "model_type": "deflagration_screening",
+        "effective_efficiency": round(effective_efficiency, 6),
+        "tnt_equivalent_mass_kg": round(tnt_mass_kg, 6),
+        "overpressure_kpa": round(overpressure_kpa, 6),
+    }
+
+
+def _solve_detonation(payload: dict[str, object]) -> dict[str, object]:
+    cloud_mass_kg = _positive_float(payload, "cloud_mass_kg")
+    heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
+    detonable_fraction = float(payload.get("detonable_fraction", 0.3))
+    distance_m = _positive_float(payload, "distance_m")
+    if not 0 < detonable_fraction <= 1:
+        raise ModelInputError("Input 'detonable_fraction' must be between 0 and 1.")
+    tnt_mass_kg = cloud_mass_kg * heat_of_combustion_kj_kg * detonable_fraction / TNT_HEAT_KJ_KG
+    scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
+    overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance) * 1.3
+    return {
+        "model_type": "detonation_screening",
+        "tnt_equivalent_mass_kg": round(tnt_mass_kg, 6),
+        "overpressure_kpa": round(overpressure_kpa, 6),
+        "detonation_likelihood": "credible" if detonable_fraction >= 0.25 else "screened_low",
+    }
+
+
+def _solve_blast_damage(payload: dict[str, object]) -> dict[str, object]:
+    overpressure_kpa = _positive_float(payload, "overpressure_kpa")
+    impulse_kpa_s = float(payload.get("impulse_kpa_s", 0.0))
+    if overpressure_kpa >= 70:
+        structural_damage = "severe"
+    elif overpressure_kpa >= 35:
+        structural_damage = "major"
+    elif overpressure_kpa >= 14:
+        structural_damage = "moderate"
+    else:
+        structural_damage = "minor"
+    return {
+        "model_type": "blast_damage_screening",
+        "structural_damage": structural_damage,
+        "window_breakage_likely": overpressure_kpa >= 3,
+        "impulse_kpa_s": round(impulse_kpa_s, 6),
+    }
+
+
+def _solve_mitigation(payload: dict[str, object]) -> dict[str, object]:
+    overpressure_kpa = _positive_float(payload, "overpressure_kpa")
+    barrier_efficiency = float(payload.get("barrier_efficiency", 0.0))
+    target_overpressure_kpa = _positive_float(payload, "target_overpressure_kpa")
+    venting_factor = float(payload.get("venting_factor", 0.0))
+    if not 0 <= barrier_efficiency <= 1:
+        raise ModelInputError("Input 'barrier_efficiency' must be between 0 and 1.")
+    if not 0 <= venting_factor <= 1:
+        raise ModelInputError("Input 'venting_factor' must be between 0 and 1.")
+    mitigated = overpressure_kpa * (1 - barrier_efficiency) * (1 - 0.5 * venting_factor)
+    return {
+        "model_type": "mitigation_screening",
+        "mitigated_overpressure_kpa": round(mitigated, 6),
+        "meets_target": mitigated <= target_overpressure_kpa,
+        "required_additional_reduction_kpa": round(max(mitigated - target_overpressure_kpa, 0.0), 6),
     }

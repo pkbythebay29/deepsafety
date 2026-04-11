@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Safety App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>Interactive app</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Home</a>
+          <a class="is-active" href="./app.html">App</a>
+          <a href="./api-docs.html">API Docs</a>
+          <a href="./readme.html">README</a>
+        </div>
+      </nav>
+
+      <header class="page-title">
+        <p class="eyebrow">Deep Safety App</p>
+        <h1>Place the source. Set the parameters. Read the assumptions.</h1>
+        <p>
+          The form defaults to browser-local mode, so the experience works even
+          without an external API endpoint. Every field explains what it means,
+          and every model panel shows the equations, constants, and source
+          notes used for the result.
+        </p>
+      </header>
+
+      <main class="app-layout">
+        <section class="card">
+          <div class="panel-header">
+            <h2>Scenario Builder</h2>
+            <p>Use this to configure the source, map inputs, and run checks.</p>
+          </div>
+
+          <label class="field">
+            <span class="field-label-row">
+              <span>API mode</span>
+              <span
+                class="info-badge"
+                title="Use browser://local for the in-browser runtime, or enter an HTTP base URL for a deployed Deep Safety API."
+                >?</span
+              >
+            </span>
+            <input
+              id="apiBaseUrl"
+              type="url"
+              placeholder="browser://local or https://your-api.example.com"
+            />
+            <small class="field-help"
+              >`browser://local` keeps everything in the browser with no external
+              backend.</small
+            >
+          </label>
+
+          <div class="grid">
+            <label class="field">
+              <span class="field-label-row">
+                <span>Scenario</span>
+                <span
+                  class="info-badge"
+                  title="Leak focuses on release and dispersion impacts. Fire focuses on thermal impacts."
+                  >?</span
+                >
+              </span>
+              <select id="scenarioType">
+                <option value="leak">Leak</option>
+                <option value="fire">Fire</option>
+              </select>
+              <small class="field-help">Select the hazard type to evaluate.</small>
+            </label>
+
+            <label class="field">
+              <span class="field-label-row">
+                <span>Model</span>
+                <span
+                  class="info-badge"
+                  title="The selected model controls the receptor calculation and the documentation shown below."
+                  >?</span
+                >
+              </span>
+              <select id="modelId"></select>
+              <small class="field-help">Choose the calculation model for this scenario.</small>
+            </label>
+          </div>
+
+          <div id="scenarioFields" class="scenario-fields"></div>
+
+          <div class="callout">
+            <strong>Sign intelligence:</strong> upload a sign photo if you have
+            one, then add the text from the sign or OCR. Deep Safety will map
+            it to a leak-ready scenario seed.
+          </div>
+
+          <label class="field">
+            <span class="field-label-row">
+              <span>Sign photo</span>
+              <span
+                class="info-badge"
+                title="Optional sign photo. The API accepts the image payload, but classification currently depends on OCR text or manual sign text."
+                >?</span
+              >
+            </span>
+            <input id="signPhoto" type="file" accept="image/*" capture="environment" />
+            <small class="field-help">Use a live photo or an existing sign image.</small>
+          </label>
+
+          <label class="field">
+            <span class="field-label-row">
+              <span>Sign text or OCR</span>
+              <span
+                class="info-badge"
+                title="Paste or type the text visible on the sign. This is what the API uses to classify the hazard."
+                >?</span
+              >
+            </span>
+            <textarea
+              id="signObservedText"
+              rows="4"
+              placeholder="Gas pipeline present. High pressure gas."
+            ></textarea>
+            <small class="field-help">This can come from manual typing or OCR output.</small>
+          </label>
+
+          <div class="button-row">
+            <button id="analyzeSign" class="secondary-button">Analyze sign</button>
+          </div>
+
+          <label class="field">
+            <span class="field-label-row">
+              <span>Map image overlay</span>
+              <span
+                class="info-badge"
+                title="Optional site image or drawing placed over the current map view for local context."
+                >?</span
+              >
+            </span>
+            <input id="mapUpload" type="file" accept="image/*" />
+            <small class="field-help">Optional image overlay for plant or site context.</small>
+          </label>
+
+          <label class="field">
+            <span class="field-label-row">
+              <span>Constant overrides</span>
+              <span
+                class="info-badge"
+                title="Optional JSON object that overrides default constants for sensitivity checks."
+                >?</span
+              >
+            </span>
+            <textarea
+              id="constantOverrides"
+              rows="5"
+              placeholder='{"fire.default_radiative_fraction": 0.4}'
+            ></textarea>
+            <small class="field-help">Optional JSON overrides for model constants.</small>
+          </label>
+
+          <div class="button-row">
+            <button id="saveApiBase" class="secondary-button">Save mode</button>
+            <button id="sourceMode" class="secondary-button">Place source</button>
+            <button id="receptorMode" class="secondary-button">Place receptors</button>
+            <button id="resetMap" class="ghost-button">Reset map</button>
+          </div>
+
+          <div class="button-row">
+            <button id="runImpactZones" class="primary-button">Draw impact circle</button>
+            <button id="runScenario" class="secondary-button">Analyze receptors</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="panel-header">
+            <h2>Map</h2>
+            <p>Click once for a source, then switch modes to add receptors.</p>
+          </div>
+          <div id="map"></div>
+        </section>
+      </main>
+
+      <section class="docs-grid">
+        <article class="card">
+          <div class="panel-header">
+            <h2>Results</h2>
+            <p>Impact circles and receptor checks come directly from the API contract.</p>
+          </div>
+          <div id="results"></div>
+        </article>
+
+        <article class="card">
+          <div class="panel-header">
+            <h2>Model Details</h2>
+            <p>Hover the badges to inspect equations, constants, and data source notes.</p>
+          </div>
+          <div id="modelDocs"></div>
+        </article>
+      </section>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="./browser-api.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

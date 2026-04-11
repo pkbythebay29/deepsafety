@@ -17,9 +17,12 @@ from deepsafety.dispersion_service import solve_dispersion_model
 from deepsafety.effect_models import solve_effect_model
 from deepsafety.fire_explosion_models import solve_fire_explosion_model
 from deepsafety.gis import circle_polygon, haversine_distance_m, point_feature
+from deepsafety.prevention_response_models import solve_prevention_response_model
 from deepsafety.scenario_engine import build_scenario_definition
 from deepsafety.scenario_library import list_templates
+from deepsafety.sign_intelligence import analyze_sign
 from deepsafety.source_models import solve_source_model
+from deepsafety.toxic_criteria import lookup_toxic_criteria
 from deepsafety.schemas import (
     CalculationRequest,
     CalculationResponse,
@@ -36,6 +39,8 @@ from deepsafety.schemas import (
     ReferenceMetadata,
     ScenarioDefinitionRequest,
     ScenarioDefinitionResponse,
+    SignAnalysisRequest,
+    SignAnalysisResponse,
     ServiceMetadata,
     ServiceRequest,
     ServiceResponse,
@@ -260,11 +265,54 @@ FIRE_EXPLOSION_METADATA = {
             }
         ],
     },
+    "deflagration_screening": {
+        "equations": ["W_TNT = eta_eff * M_cloud * DeltaH_c / H_TNT"],
+        "assumptions": ["Effective efficiency is driven by flame speed and confinement for screening."],
+        "references": [
+            {
+                "title": "Deflagration screening approximation",
+                "notes": "Fast explosion screening based on flame-speed and confinement proxies.",
+            }
+        ],
+    },
+    "detonation_screening": {
+        "equations": ["W_TNT = f_det * M_cloud * DeltaH_c / H_TNT"],
+        "assumptions": ["Detonation endpoint is a screening approximation using detonable fraction."],
+        "references": [
+            {
+                "title": "Detonation screening approximation",
+                "notes": "Used to represent high-severity blast screening without full reactive CFD.",
+            }
+        ],
+    },
+    "blast_damage_screening": {
+        "equations": ["Damage category selected from overpressure thresholds."],
+        "assumptions": ["Structural damage categories are screening bands keyed to overpressure."],
+        "references": [
+            {
+                "title": "Blast damage screening thresholds",
+                "notes": "Maps overpressure into minor, moderate, major, and severe screening categories.",
+            }
+        ],
+    },
+    "mitigation_screening": {
+        "equations": ["P_mitigated = P * (1 - barrier_efficiency) * (1 - 0.5 * venting_factor)"],
+        "assumptions": ["Barrier and venting factors are treated as first-pass reduction multipliers."],
+        "references": [
+            {
+                "title": "Explosion mitigation screening approximation",
+                "notes": "Used for fast stand-off and mitigation planning studies.",
+            }
+        ],
+    },
 }
 EFFECT_MODEL_METADATA = {
     "toxic_probit": {
         "equations": ["Y = a + b * ln(C^n * t)"],
-        "assumptions": ["Fatality probability derived from a probit-to-normal conversion."],
+        "assumptions": [
+            "Fatality probability derived from a probit-to-normal conversion.",
+            "Population distribution inputs can be supplied to estimate expected fatalities by exposure zone.",
+        ],
         "references": [
             {
                 "title": "Toxic probit screening relation",
@@ -272,9 +320,24 @@ EFFECT_MODEL_METADATA = {
             }
         ],
     },
+    "toxic_dose_response": {
+        "equations": ["Y = a + b * ln(C^n * t)"],
+        "assumptions": [
+            "Generates a concentration-versus-fatality screening curve at a fixed exposure duration.",
+        ],
+        "references": [
+            {
+                "title": "Toxic dose-response screening relation",
+                "notes": "Returns curve points so client applications can plot consequence thresholds directly.",
+            }
+        ],
+    },
     "thermal_probit": {
         "equations": ["Y = a + b * ln(I^(4/3) * t)"],
-        "assumptions": ["Burn probability derived from a thermal probit screening relation."],
+        "assumptions": [
+            "Burn probability derived from a thermal probit screening relation.",
+            "Population distribution inputs can be supplied to estimate expected burn cases by exposure zone.",
+        ],
         "references": [
             {
                 "title": "Thermal probit screening relation",
@@ -282,15 +345,110 @@ EFFECT_MODEL_METADATA = {
             }
         ],
     },
+    "thermal_dose_response": {
+        "equations": ["Y = a + b * ln(I^(4/3) * t)"],
+        "assumptions": [
+            "Generates a heat-flux-versus-burn-probability screening curve at a fixed exposure duration.",
+        ],
+        "references": [
+            {
+                "title": "Thermal dose-response screening relation",
+                "notes": "Returns curve points so client applications can plot burn probability against radiation intensity.",
+            }
+        ],
+    },
     "explosion_probit": {
         "equations": ["Y = a + b * ln(P)"],
-        "assumptions": ["Explosion fatality probability derived from overpressure probit form."],
+        "assumptions": [
+            "Explosion fatality probability derived from overpressure probit form.",
+            "Population distribution inputs can be supplied to estimate expected fatalities by overpressure zone.",
+        ],
         "references": [
             {
                 "title": "Explosion overpressure probit screening relation",
                 "notes": "Overpressure is transformed into a screening fatality probability.",
             }
         ],
+    },
+    "explosion_dose_response": {
+        "equations": ["Y = a + b * ln(P)"],
+        "assumptions": [
+            "Generates an overpressure-versus-fatality screening curve.",
+        ],
+        "references": [
+            {
+                "title": "Explosion dose-response screening relation",
+                "notes": "Returns curve points so client applications can plot fatality probability against overpressure.",
+            }
+        ],
+    },
+}
+SIGN_INTELLIGENCE_METADATA = {
+    "sign_analysis": {
+        "equations": [
+            "Keyword and phrase matching against normalized sign text.",
+        ],
+        "assumptions": [
+            "This service classifies sign meaning from OCR text or manually entered sign text rather than raw pixels.",
+            "Returned scenario seeds are intended to accelerate downstream consequence calculations.",
+        ],
+        "references": [
+            {
+                "title": "Deep Safety sign intelligence heuristics",
+                "notes": "Multilingual keyword screening for pipeline, flammable gas, high-pressure gas, and toxic gas signs.",
+            }
+        ],
+    }
+}
+TOXIC_CRITERIA_METADATA = {
+    "toxic_criteria_lookup": {
+        "equations": ["Registry lookup and optional caller override merge for toxic criteria values."],
+        "assumptions": [
+            "Starter criteria registry is built into the API and can be extended through request overrides.",
+        ],
+        "references": [
+            {
+                "title": "Deep Safety toxic criteria registry",
+                "notes": "Starter dataset covering AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoint values for selected chemicals.",
+            }
+        ],
+    }
+}
+PREVENTION_RESPONSE_METADATA = {
+    "fire_triangle_screening": {
+        "equations": ["Fire possible when fuel, oxidizer, and ignition source are all present."],
+        "assumptions": ["Boolean fire triangle screening check."],
+        "references": [{"title": "Fire triangle screening"}],
+    },
+    "autoignition_screening": {
+        "equations": ["safety_margin = T_autoignition - T_process"],
+        "assumptions": ["Temperature margin used as a screening ignition indicator."],
+        "references": [{"title": "Autoignition temperature screening"}],
+    },
+    "inerting_requirement": {
+        "equations": ["V_inert = V_protected * (x_O2,initial - x_O2,target) / purity"],
+        "assumptions": ["Well-mixed oxygen dilution screening model."],
+        "references": [{"title": "Inerting requirement screening"}],
+    },
+    "ignition_energy_screening": {
+        "equations": ["energy_ratio = E_source / MIE"],
+        "assumptions": ["Compares source energy against minimum ignition energy."],
+        "references": [{"title": "Minimum ignition energy screening"}],
+    },
+    "spray_mist_screening": {
+        "equations": ["mist_enhancement_factor = (spray_pressure / droplet_size) * (T_liquid / flash_point)"],
+        "assumptions": ["Atomization and temperature proxies used for spray/mist fire screening."],
+        "references": [{"title": "Spray and mist screening approximation"}],
+    },
+    "release_prevention_screening": {
+        "equations": ["prevention_score = barriers * P_shutdown / (1 + t_detect/60 + t_isolate/60) * (30 / inspection_interval_days)"],
+        "assumptions": ["Barrier count, response time, and inspection interval are combined into a screening score."],
+        "references": [{"title": "Release prevention screening"}],
+    },
+    "emergency_response_planning": {
+        "equations": ["urgency_score = population_exposed * release_duration / response_team_time"],
+        "assumptions": ["Compares shelter and evacuation times to propose an initial protective action."],
+        "references": [{"title": "Emergency response planning screening"}],
     },
 }
 
@@ -465,13 +623,80 @@ def _build_impact_inputs(
 
     released_mass_kg = asset.get("released_mass_kg")
     if released_mass_kg is None:
+        leak_duration = asset.get("duration_s", asset.get("leak_duration_s"))
         mass_flow = asset.get("mass_flow_kg_s")
-        leak_duration = asset.get("leak_duration_s")
-        if mass_flow is None or leak_duration is None:
-            raise ModelInputError(
-                "Leak impact zones require either 'released_mass_kg' or both 'mass_flow_kg_s' and 'leak_duration_s'."
+        if mass_flow is not None and leak_duration is not None:
+            released_mass_kg = float(mass_flow) * float(leak_duration)
+        elif (
+            leak_duration is not None
+            and (
+                "upstream_pressure_pa" in asset
+                or "line_pressure_kpa" in asset
+                or "delta_pressure_pa" in asset
+                or "density_kg_m3" in asset
             )
-        released_mass_kg = float(mass_flow) * float(leak_duration)
+        ):
+            if "density_kg_m3" in asset and (
+                "liquid_head_m" in asset or "delta_pressure_pa" in asset
+            ):
+                source_inputs = {
+                    "density_kg_m3": asset.get("density_kg_m3"),
+                    "duration_s": leak_duration,
+                    "source_subtype": asset.get("source_subtype", "hole_in_tank"),
+                    "discharge_coefficient": asset.get("discharge_coefficient", 0.62),
+                    "liquid_head_m": asset.get("liquid_head_m"),
+                    "delta_pressure_pa": asset.get("delta_pressure_pa"),
+                    "hole_area_m2": asset.get("hole_area_m2"),
+                    "hole_diameter_m": asset.get("hole_diameter_m", asset.get("diameter_m")),
+                    "pipe_area_m2": asset.get("pipe_area_m2"),
+                    "pipe_diameter_m": asset.get("pipe_diameter_m", asset.get("diameter_m")),
+                    "pipe_length_m": asset.get("pipe_length_m"),
+                    "inventory_mass_kg": asset.get("inventory_mass_kg"),
+                    "conservative_mode": asset.get("conservative_mode", False),
+                }
+                source_inputs = {key: value for key, value in source_inputs.items() if value is not None}
+                source_outputs = solve_source_model("liquid_release", source_inputs)
+            else:
+                source_inputs = {
+                    "duration_s": leak_duration,
+                    "upstream_pressure_pa": asset.get(
+                        "upstream_pressure_pa",
+                        float(asset.get("line_pressure_kpa", 0.0)) * 1000.0,
+                    ),
+                    "downstream_pressure_pa": asset.get("downstream_pressure_pa", 101_325.0),
+                    "temperature_k": asset.get(
+                        "temperature_k",
+                        float(asset.get("gas_temperature_c", 15.0)) + 273.15,
+                    ),
+                    "heat_capacity_ratio": asset.get("heat_capacity_ratio", 1.3),
+                    "molecular_weight_kg_kmol": asset.get("molecular_weight_kg_kmol", 28.97),
+                    "discharge_coefficient": asset.get("discharge_coefficient", 0.62),
+                    "compressibility": asset.get("compressibility", 1.0),
+                    "source_subtype": asset.get(
+                        "source_subtype",
+                        asset.get("discharge_geometry", "pipe"),
+                    ),
+                    "pipe_area_m2": asset.get("pipe_area_m2"),
+                    "pipe_diameter_m": asset.get("pipe_diameter_m", asset.get("diameter_m")),
+                    "pipe_length_m": asset.get("pipe_length_m"),
+                    "hole_area_m2": asset.get("hole_area_m2"),
+                    "hole_diameter_m": asset.get("hole_diameter_m", asset.get("diameter_m")),
+                    "relief_area_m2": asset.get("relief_area_m2"),
+                    "relief_diameter_m": asset.get("relief_diameter_m"),
+                    "inventory_mass_kg": asset.get("inventory_mass_kg"),
+                    "vessel_volume_m3": asset.get("vessel_volume_m3"),
+                    "final_pressure_pa": asset.get("final_pressure_pa"),
+                    "conservative_mode": asset.get("conservative_mode", False),
+                }
+                source_inputs = {key: value for key, value in source_inputs.items() if value is not None}
+                source_outputs = solve_source_model("gas_release", source_inputs)
+            released_mass_kg = float(source_outputs["total_mass_kg"])
+        else:
+            if mass_flow is None or leak_duration is None:
+                raise ModelInputError(
+                    "Leak impact zones require either 'released_mass_kg', source-term inputs, or both 'mass_flow_kg_s' and 'leak_duration_s'."
+                )
+            released_mass_kg = float(mass_flow) * float(leak_duration)
 
     return (
         DEFAULT_IMPACT_MODELS["leak"],
@@ -519,7 +744,10 @@ def create_app() -> FastAPI:
             "dispersion_endpoint": "/dispersion-models/solve",
             "fire_explosion_endpoint": "/fire-explosion-models/solve",
             "effects_endpoint": "/effect-models/solve",
+            "toxic_criteria_endpoint": "/toxic-criteria/lookup",
+            "prevention_response_endpoint": "/prevention-response-models/solve",
             "visualization_endpoint": "/visualization/solve",
+            "sign_analysis_endpoint": "/signs/analyze",
             "gis_endpoint": "/gis/scenarios/evaluate",
             "impact_zones_endpoint": "/gis/impact-zones",
         }
@@ -638,6 +866,39 @@ def create_app() -> FastAPI:
                 )
                 for model_type, details in EFFECT_MODEL_METADATA.items()
             ],
+            "toxic_criteria": [
+                ServiceMetadata(
+                    service_name="toxic_criteria",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in TOXIC_CRITERIA_METADATA.items()
+            ],
+            "prevention_response_models": [
+                ServiceMetadata(
+                    service_name="prevention_response_models",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in PREVENTION_RESPONSE_METADATA.items()
+            ],
+            "sign_intelligence": [
+                ServiceMetadata(
+                    service_name="sign_intelligence",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in SIGN_INTELLIGENCE_METADATA.items()
+            ],
         }
 
     @app.post("/source-models/solve", response_model=ServiceResponse)
@@ -672,6 +933,22 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return _service_response(request.model_type, outputs, EFFECT_MODEL_METADATA)
 
+    @app.post("/toxic-criteria/lookup", response_model=ServiceResponse)
+    def lookup_toxic_criteria_endpoint(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = lookup_toxic_criteria(request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response("toxic_criteria_lookup", outputs, TOXIC_CRITERIA_METADATA)
+
+    @app.post("/prevention-response-models/solve", response_model=ServiceResponse)
+    def solve_prevention_response(request: ServiceRequest) -> ServiceResponse:
+        try:
+            outputs = solve_prevention_response_model(request.model_type, request.inputs)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _service_response(request.model_type, outputs, PREVENTION_RESPONSE_METADATA)
+
     @app.post("/visualization/solve", response_model=VisualizationResponse)
     def solve_visualization(request: VisualizationRequest) -> VisualizationResponse:
         try:
@@ -679,6 +956,39 @@ def create_app() -> FastAPI:
         except (ModelInputError, KeyError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return VisualizationResponse(layer_type=request.layer_type, payload=payload)
+
+    @app.post("/signs/analyze", response_model=SignAnalysisResponse)
+    def analyze_sign_endpoint(request: SignAnalysisRequest) -> SignAnalysisResponse:
+        try:
+            payload = analyze_sign(request.model_dump(exclude_none=True))
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return SignAnalysisResponse(
+            sign_type=str(payload["sign_type"]),
+            confidence=float(payload["confidence"]),
+            normalized_text=str(payload["normalized_text"]),
+            matched_terms=[str(item) for item in payload.get("matched_terms", [])],
+            asset_type=str(payload["asset_type"]),
+            substance_family=str(payload["substance_family"]),
+            hazard_classes=[str(item) for item in payload.get("hazard_classes", [])],
+            recommended_services=[str(item) for item in payload.get("recommended_services", [])],
+            recommended_models=dict(payload.get("recommended_models", {})),
+            scenario_template_id=str(payload["scenario_template_id"]),
+            scenario_definition_seed=dict(payload.get("scenario_definition_seed", {})),
+            impact_zone_seed=dict(payload.get("impact_zone_seed", {})),
+            required_parameters=[
+                FieldMetadata(
+                    name=str(item["name"]),
+                    type=str(item["type"]),
+                    description=str(item["description"]),
+                    unit=str(item["unit"]) if item.get("unit") is not None else None,
+                    required=True,
+                    allowed_values=[],
+                )
+                for item in payload.get("required_parameters", [])
+            ],
+            notes=[str(item) for item in payload.get("notes", [])],
+        )
 
     @app.post("/models/{model_id}/calculate", response_model=CalculationResponse)
     def calculate(model_id: str, request: CalculationRequest) -> CalculationResponse:

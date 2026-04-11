@@ -10,132 +10,120 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>Process safety calculations</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a class="is-active" href="./index.html">Home</a>
+          <a href="./app.html">App</a>
+          <a href="./api-docs.html">API Docs</a>
+          <a href="./readme.html">README</a>
+        </div>
+      </nav>
+
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Deep Safety</p>
-          <h1>Consequence analysis made usable.</h1>
+          <h1>Consequence analysis that is ready to integrate.</h1>
           <p class="lede">
-            Place a source, fill in the scenario values, and inspect the exact
-            assumptions behind every result.
+            Deep Safety gives you a Python package, REST API, MCP-ready service
+            surface, and a browser-local runtime so process safety calculations
+            can plug into notebooks, applications, and agent workflows without
+            rework.
           </p>
+          <div class="hero-actions">
+            <a class="button-link primary-button" href="./app.html">Launch App</a>
+            <a class="button-link secondary-button" href="./api-docs.html">Open API Docs</a>
+            <a class="button-link ghost-button" href="./readme.html">Read README</a>
+          </div>
         </div>
-        <div class="hero-card">
-          <label class="field">
-            <span class="field-label-row">
-              <span>API base URL</span>
-              <span class="info-badge" title="The Deep Safety backend this page calls for calculations, model metadata, and map layers.">?</span>
-            </span>
-            <input id="apiBaseUrl" type="url" placeholder="https://your-api.example.com" />
-            <small class="field-help">Set the API endpoint this page should use.</small>
-          </label>
-          <label class="field">
-            <span class="field-label-row">
-              <span>Map image overlay</span>
-              <span class="info-badge" title="Optional site image or drawing placed over the current map view for visual context.">?</span>
-            </span>
-            <input id="mapUpload" type="file" accept="image/*" />
-            <small class="field-help">Optional image for site context over the map.</small>
-          </label>
-          <button id="saveApiBase" class="primary-button">Save API URL</button>
-        </div>
+
+        <aside class="hero-panel stack">
+          <div>
+            <h2>Runs in the browser</h2>
+            <p class="doc-copy">
+              The site defaults to `browser://local`, so users can explore the
+              Deep Safety API surface without setting up an external backend.
+            </p>
+          </div>
+          <div>
+            <span class="tag">Python package</span>
+            <span class="tag">REST API</span>
+            <span class="tag">MCP ready</span>
+            <span class="tag">Docker ready</span>
+          </div>
+          <div class="code-block">
+            <pre><code>pip install deepsafety
+deepsafety-api
+
+# or build a local container
+docker compose up --build</code></pre>
+          </div>
+        </aside>
       </header>
 
-      <main class="layout">
-        <section class="control-panel card">
-          <div class="panel-header">
-            <h2>Scenario Builder</h2>
-            <p>Drop a source pin, configure the asset, and generate screening circles or receptor checks.</p>
-          </div>
-
-          <div class="grid">
-            <label class="field">
-              <span class="field-label-row">
-                <span>Scenario</span>
-                <span class="info-badge" title="Choose the type of consequence workflow to run. Leak focuses on release and dispersion impacts. Fire focuses on thermal impacts.">?</span>
-              </span>
-              <select id="scenarioType">
-                <option value="leak">Leak</option>
-                <option value="fire">Fire</option>
-              </select>
-              <small class="field-help">Select the hazard type to evaluate.</small>
-            </label>
-
-            <label class="field">
-              <span class="field-label-row">
-                <span>Model</span>
-                <span class="info-badge" title="The calculation model used for the current scenario. The detail panel explains the exact equations, constants, and references.">?</span>
-              </span>
-              <select id="modelId"></select>
-              <small class="field-help">Select the calculation model for this scenario.</small>
-            </label>
-          </div>
-
-          <div id="scenarioFields" class="scenario-fields"></div>
-
-          <label class="field">
-            <span class="field-label-row">
-              <span>Constant overrides</span>
-              <span class="info-badge" title="Optional JSON object used to override default model constants for sensitivity checks or alternate assumptions.">?</span>
-            </span>
-            <textarea id="constantOverrides" rows="5" placeholder='{"fire.default_radiative_fraction": 0.4}'></textarea>
-            <small class="field-help">Optional JSON overrides for model constants.</small>
-          </label>
-
-          <div class="button-row">
-            <button id="sourceMode" class="secondary-button">Place source</button>
-            <button id="receptorMode" class="secondary-button">Place receptors</button>
-            <button id="resetMap" class="ghost-button">Reset map</button>
-          </div>
-
-          <div class="button-row">
-            <button id="runImpactZones" class="primary-button">Draw impact circle</button>
-            <button id="runScenario" class="secondary-button">Analyze receptors</button>
-          </div>
-        </section>
-
-        <section class="map-card card">
-          <div class="panel-header">
-            <h2>Map</h2>
-            <p>Impact zones and receptor checks are rendered from the live API response.</p>
-          </div>
-          <div id="map"></div>
-        </section>
-      </main>
-
-      <section class="docs-layout">
-        <article class="card results-card">
-          <div class="panel-header">
-            <h2>Results</h2>
-            <p>Impact circles and receptor outputs are both rendered from the live API.</p>
-          </div>
-          <div id="results"></div>
+      <section class="cards-grid">
+        <article class="feature-card">
+          <h3>Model the scenario</h3>
+          <p>
+            Define incidents, release conditions, meteorology, and screening
+            assumptions through a stable API contract with transparent
+            equations, constants, and references.
+          </p>
         </article>
-
-        <article class="card docs-card">
-          <div class="panel-header">
-            <h2>Model Details</h2>
-            <p>Hover the detail badges to see equations, constants, and reference sources explicitly.</p>
-          </div>
-          <div id="modelDocs"></div>
+        <article class="feature-card">
+          <h3>Map the impact</h3>
+          <p>
+            Drop a pin, set line pressure, flow, temperature, and geometry, and
+            get impact circles, receptor checks, and map-ready payloads
+            immediately.
+          </p>
+        </article>
+        <article class="feature-card">
+          <h3>Automate at scale</h3>
+          <p>
+            Use the same service surface from Jupyter, the Python package, the
+            HTTP API, or the MCP server so teams and agents share one standard.
+          </p>
         </article>
       </section>
-    </div>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
-    <script src="./app.js"></script>
+      <section class="card">
+        <div class="panel-header">
+          <h2>What’s included</h2>
+          <p>Everything is shaped so applications can consume it directly.</p>
+        </div>
+        <div class="stat-grid">
+          <article class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Service layers exposed through the API</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Runtime modes: package, HTTP, browser-local</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-value">1</div>
+            <div class="stat-label">Install target: `deepsafety`</div>
+          </article>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        Use <a href="./app.html">the app</a> for the interactive map workflow,
+        <a href="./api-docs.html">the API docs</a> for endpoint contracts, and
+        <a href="./readme.html">the README page</a> for installation and
+        project details.
+      </p>
+    </div>
   </body>
 </html>

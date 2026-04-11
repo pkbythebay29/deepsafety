@@ -151,6 +151,31 @@ TOOLS = [
         },
     },
     {
+        "name": "lookup_toxic_criteria",
+        "description": "Fetch toxic effect criteria such as AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoints from the DeepSafety starter registry.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "chemical": {"type": "string"},
+                "criteria_names": {"type": "array"},
+                "criteria_overrides": {"type": "object"},
+            },
+            "required": ["chemical"],
+        },
+    },
+    {
+        "name": "solve_prevention_response_model",
+        "description": "Execute DeepSafety prevention, ignition, spray/mist, or emergency response screening models.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "model_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["model_type"],
+        },
+    },
+    {
         "name": "solve_visualization",
         "description": "Build a DeepSafety visualization payload such as contours or time evolution.",
         "inputSchema": {
@@ -175,6 +200,23 @@ TOOLS = [
                 "constants": {"type": "object"},
             },
             "required": ["scenario_type", "source"],
+        },
+    },
+    {
+        "name": "analyze_sign",
+        "description": "Classify a process-safety sign from OCR or manually entered sign text and return a leak-ready scenario seed.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "image_base64": {"type": "string"},
+                "image_media_type": {"type": "string"},
+                "observed_text": {"type": "string"},
+                "locale": {"type": "string"},
+                "site_context": {"type": "string"},
+                "topography": {"type": "string"},
+                "stability_class": {"type": "string"},
+                "wind_speed_m_s": {"type": "number"},
+            },
         },
     },
 ]
@@ -321,6 +363,29 @@ def _handle_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             )
             return _tool_result(data)
 
+        if name == "lookup_toxic_criteria":
+            data = _call_api(
+                "POST",
+                "/toxic-criteria/lookup",
+                {
+                    "model_type": "toxic_criteria_lookup",
+                    "inputs": {
+                        "chemical": arguments["chemical"],
+                        "criteria_names": arguments.get("criteria_names"),
+                        "criteria_overrides": arguments.get("criteria_overrides", {}),
+                    },
+                },
+            )
+            return _tool_result(data)
+
+        if name == "solve_prevention_response_model":
+            data = _call_api(
+                "POST",
+                "/prevention-response-models/solve",
+                {"model_type": arguments["model_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
         if name == "solve_visualization":
             data = _call_api(
                 "POST",
@@ -339,6 +404,23 @@ def _handle_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                     "asset": arguments.get("asset", {}),
                     "criteria": arguments.get("criteria", []),
                     "constants": arguments.get("constants", {}),
+                },
+            )
+            return _tool_result(data)
+
+        if name == "analyze_sign":
+            data = _call_api(
+                "POST",
+                "/signs/analyze",
+                {
+                    "image_base64": arguments.get("image_base64"),
+                    "image_media_type": arguments.get("image_media_type"),
+                    "observed_text": arguments.get("observed_text"),
+                    "locale": arguments.get("locale"),
+                    "site_context": arguments.get("site_context"),
+                    "topography": arguments.get("topography"),
+                    "stability_class": arguments.get("stability_class"),
+                    "wind_speed_m_s": arguments.get("wind_speed_m_s"),
                 },
             )
             return _tool_result(data)
