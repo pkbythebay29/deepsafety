@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deep Safety</title>
+    <title>Deep Safety Documentation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,110 +19,211 @@
           <div class="brand-mark">DS</div>
           <div class="brand-text">
             <strong>Deep Safety</strong>
-            <span>Process safety calculations</span>
+            <span>Documentation</span>
           </div>
         </div>
         <div class="nav-links">
-          <a class="is-active" href="./index.html">Home</a>
+          <a class="is-active" href="./index.html">Docs Home</a>
+          <a href="./api-docs.html">API Reference</a>
+          <a href="./tutorials.html">Tutorials</a>
+          <a href="./use-cases.html">Use Cases</a>
           <a href="./app.html">App</a>
-          <a href="./api-docs.html">API Docs</a>
           <a href="./readme.html">README</a>
         </div>
       </nav>
 
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Deep Safety</p>
-          <h1>Consequence analysis that is ready to integrate.</h1>
+          <p class="eyebrow">Deep Safety Docs</p>
+          <h1>Reference documentation for process safety modeling.</h1>
           <p class="lede">
-            Deep Safety gives you a Python package, REST API, MCP-ready service
-            surface, and a browser-local runtime so process safety calculations
-            can plug into notebooks, applications, and agent workflows without
-            rework.
+            Deep Safety is organized like a technical library: foundational
+            data, model families, tutorials, and application patterns are kept
+            separate so teams can move quickly from evaluation to integration.
           </p>
+          <div class="doc-tabs">
+            <a class="doc-tab is-active" href="./index.html">Documentation Home</a>
+            <a class="doc-tab" href="./api-docs.html">Reference Modules</a>
+            <a class="doc-tab" href="./tutorials.html">Training Guides</a>
+            <a class="doc-tab" href="./use-cases.html">Use Cases</a>
+          </div>
           <div class="hero-actions">
-            <a class="button-link primary-button" href="./app.html">Launch App</a>
-            <a class="button-link secondary-button" href="./api-docs.html">Open API Docs</a>
-            <a class="button-link ghost-button" href="./readme.html">Read README</a>
+            <a class="button-link primary-button" href="./api-docs.html">Open Reference</a>
+            <a class="button-link secondary-button" href="./tutorials.html">Start Training</a>
+            <a class="button-link ghost-button" href="./app.html">Launch App</a>
           </div>
         </div>
 
         <aside class="hero-panel stack">
           <div>
-            <h2>Runs in the browser</h2>
+            <h2>Documentation map</h2>
             <p class="doc-copy">
-              The site defaults to `browser://local`, so users can explore the
-              Deep Safety API surface without setting up an external backend.
+              The structure mirrors how engineers actually use the product:
+              learn the model chain, inspect endpoint contracts, study worked
+              examples, then wire the same contract into notebooks, apps, or
+              agents.
             </p>
           </div>
           <div>
-            <span class="tag">Python package</span>
-            <span class="tag">REST API</span>
-            <span class="tag">MCP ready</span>
-            <span class="tag">Docker ready</span>
+            <span class="tag">Materials</span>
+            <span class="tag">Source terms</span>
+            <span class="tag">Dispersion</span>
+            <span class="tag">Fire and explosion</span>
+            <span class="tag">Hazard studies</span>
           </div>
-          <div class="code-block">
-            <pre><code>pip install deepsafety
-deepsafety-api
-
-# or build a local container
-docker compose up --build</code></pre>
-          </div>
+          <div class="path-block">GET /service-catalog
+GET /materials
+POST /source-models/scenario/select
+POST /dispersion/gaussian-plume
+POST /hazard-evaluation/hazop</div>
         </aside>
       </header>
 
-      <section class="cards-grid">
-        <article class="feature-card">
-          <h3>Model the scenario</h3>
-          <p>
-            Define incidents, release conditions, meteorology, and screening
-            assumptions through a stable API contract with transparent
-            equations, constants, and references.
+      <section class="docs-home-grid">
+        <aside class="docs-sidebar">
+          <div class="sidebar-title">
+            <p class="eyebrow">Contents</p>
+            <h2>Documentation Sections</h2>
+          </div>
+          <div class="sidebar-group">
+            <h3>Core references</h3>
+            <ul class="sidebar-links">
+              <li><a href="./api-docs.html#overview">API overview</a></li>
+              <li><a href="./api-docs.html#materials">Materials module</a></li>
+              <li><a href="./api-docs.html#source-models">Source models</a></li>
+              <li><a href="./api-docs.html#dispersion">Dispersion</a></li>
+              <li><a href="./api-docs.html#hazard-evaluation">Hazard evaluation</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-group">
+            <h3>Learning path</h3>
+            <ul class="sidebar-links">
+              <li><a href="./tutorials.html#quickstart">Quick start</a></li>
+              <li><a href="./tutorials.html#scenario-training">Scenario training</a></li>
+              <li><a href="./tutorials.html#notebook-training">Notebook training</a></li>
+              <li><a href="./use-cases.html#pipeline">Pipeline leak workflow</a></li>
+              <li><a href="./use-cases.html#hazop">HAZOP workflow</a></li>
+            </ul>
+          </div>
+          <p class="toc-note">
+            Reference pages are organized so application teams can jump
+            directly to the model family they need.
           </p>
-        </article>
-        <article class="feature-card">
-          <h3>Map the impact</h3>
-          <p>
-            Drop a pin, set line pressure, flow, temperature, and geometry, and
-            get impact circles, receptor checks, and map-ready payloads
-            immediately.
-          </p>
-        </article>
-        <article class="feature-card">
-          <h3>Automate at scale</h3>
-          <p>
-            Use the same service surface from Jupyter, the Python package, the
-            HTTP API, or the MCP server so teams and agents share one standard.
-          </p>
-        </article>
-      </section>
+        </aside>
 
-      <section class="card">
-        <div class="panel-header">
-          <h2>What’s included</h2>
-          <p>Everything is shaped so applications can consume it directly.</p>
-        </div>
-        <div class="stat-grid">
-          <article class="stat-card">
-            <div class="stat-value">8+</div>
-            <div class="stat-label">Endpoint families exposed through the API</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-value">4</div>
-            <div class="stat-label">Runtime modes: package, HTTP, MCP, browser-local</div>
-          </article>
-          <article class="stat-card">
-            <div class="stat-value">1</div>
-            <div class="stat-label">Install target: `deepsafety`</div>
-          </article>
-        </div>
+        <main class="docs-content">
+          <section class="doc-section">
+            <p class="eyebrow">Overview</p>
+            <h2>The model chain comes first</h2>
+            <p class="section-intro">
+              Deep Safety treats the material model as foundational. Material
+              properties, toxicity, flammability, reactivity, equipment design
+              data, and operating conditions feed source models. Source models
+              generate release rate, duration, and phase information. Those
+              outputs then feed dispersion, fire, explosion, and effect
+              calculations, which finally support HAZOP, FMEA, What-If, and
+              related hazard-evaluation workflows.
+            </p>
+          </section>
+
+          <section class="doc-section">
+            <p class="eyebrow">Modules</p>
+            <h2>Documentation entry points</h2>
+            <div class="module-grid">
+              <article class="module-list">
+                <div class="module-kicker">Reference</div>
+                <h3>API Reference</h3>
+                <p>
+                  Organized by module family with representative endpoints,
+                  input expectations, equations, constants, and integration
+                  notes.
+                </p>
+                <ul class="module-links">
+                  <li><a href="./api-docs.html#overview">Model-chain overview</a></li>
+                  <li><a href="./api-docs.html#fire-explosion">Fire and explosion</a></li>
+                  <li><a href="./api-docs.html#constants">Constants and provenance</a></li>
+                </ul>
+              </article>
+              <article class="module-list">
+                <div class="module-kicker">Training</div>
+                <h3>Tutorials</h3>
+                <p>
+                  Step-by-step examples for package users, API integrators, and
+                  browser-local users who want fast onboarding.
+                </p>
+                <ul class="module-links">
+                  <li><a href="./tutorials.html#quickstart">Ten-minute quick start</a></li>
+                  <li><a href="./tutorials.html#api-training">API-first workflow</a></li>
+                  <li><a href="./tutorials.html#browser-training">Browser-local workflow</a></li>
+                </ul>
+              </article>
+              <article class="module-list">
+                <div class="module-kicker">Application</div>
+                <h3>Use Cases</h3>
+                <p>
+                  Concrete patterns for pipeline leaks, toxic releases, siting
+                  screens, sign-triggered screening, and hazard-study support.
+                </p>
+                <ul class="module-links">
+                  <li><a href="./use-cases.html#pipeline">Pipeline leak</a></li>
+                  <li><a href="./use-cases.html#toxic-release">Toxic gas release</a></li>
+                  <li><a href="./use-cases.html#signs">Field sign analysis</a></li>
+                </ul>
+              </article>
+              <article class="module-list">
+                <div class="module-kicker">Repository</div>
+                <h3>README and install notes</h3>
+                <p>
+                  Use the README page for installation, packaging, Docker, MCP,
+                  and project-level details outside the API reference itself.
+                </p>
+                <ul class="module-links">
+                  <li><a href="./readme.html">Package install</a></li>
+                  <li><a href="./readme.html">Docker and MCP</a></li>
+                  <li><a href="./readme.html">Notebook entry points</a></li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section class="doc-section">
+            <p class="eyebrow">Highlights</p>
+            <h2>What engineers can use immediately</h2>
+            <div class="mini-grid">
+              <article class="mini-card">
+                <h3>Detailed endpoint families</h3>
+                <p>
+                  Materials, source terms, dispersion, fire, explosion, effect,
+                  prevention, relief, and hazard-evaluation modules are already
+                  exposed through the same API surface.
+                </p>
+              </article>
+              <article class="mini-card">
+                <h3>Explicit equations and constants</h3>
+                <p>
+                  Responses and documentation explain which equations are used,
+                  which constants appear, and what each constant means
+                  physically.
+                </p>
+              </article>
+              <article class="mini-card">
+                <h3>Browser, package, API, and MCP</h3>
+                <p>
+                  The same contract can be used from GitHub Pages, Python,
+                  FastAPI, or the MCP bridge without inventing separate model
+                  vocabularies.
+                </p>
+              </article>
+            </div>
+          </section>
+        </main>
       </section>
 
       <p class="footer-note">
-        Use <a href="./app.html">the app</a> for the interactive map workflow,
-        <a href="./api-docs.html">the API docs</a> for endpoint contracts, and
-        <a href="./readme.html">the README page</a> for installation and
-        project details.
+        Start with <a href="./api-docs.html">API Reference</a> for
+        module-level details, then move to
+        <a href="./tutorials.html">Tutorials</a> or
+        <a href="./use-cases.html">Use Cases</a> for application examples.
       </p>
     </div>
   </body>

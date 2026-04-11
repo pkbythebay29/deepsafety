@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Safety Use Cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>Use cases</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Docs Home</a>
+          <a href="./api-docs.html">API Reference</a>
+          <a href="./tutorials.html">Tutorials</a>
+          <a class="is-active" href="./use-cases.html">Use Cases</a>
+          <a href="./app.html">App</a>
+          <a href="./readme.html">README</a>
+        </div>
+      </nav>
+
+      <header class="page-title">
+        <p class="eyebrow">Use Cases</p>
+        <h1>Application patterns for real Deep Safety integrations.</h1>
+        <p class="doc-copy">
+          These examples show how the API can be composed in products, field
+          tools, notebooks, and agent workflows without flattening the modeling
+          chain.
+        </p>
+      </header>
+
+      <div class="doc-tabs">
+        <a class="doc-tab" href="./api-docs.html">API Reference</a>
+        <a class="doc-tab" href="./tutorials.html">Tutorials</a>
+        <a class="doc-tab is-active" href="./use-cases.html">Use Cases</a>
+        <a class="doc-tab" href="./readme.html">README</a>
+      </div>
+
+      <section class="use-case-grid">
+        <article class="use-case-card" id="pipeline">
+          <p class="eyebrow">Use Case</p>
+          <h2>Pipeline leak impact screening</h2>
+          <p>
+            A map-based application allows an engineer to drop a pin on a gas
+            line, define pressure, temperature, flow, geometry, and leak type,
+            then generate an impact zone and receptor screening result.
+          </p>
+          <div class="equation-panel">
+            <pre>materials -> scenario/select -> gas-pipe -> dispersion -> gis/impact-zones</pre>
+          </div>
+        </article>
+
+        <article class="use-case-card" id="toxic-release">
+          <p class="eyebrow">Use Case</p>
+          <h2>Toxic gas release planning</h2>
+          <p>
+            An application can take a stored chlorine or ammonia record,
+            calculate a worst-case or realistic release, compare predicted
+            concentrations to AEGL or ERPG values, and render contour payloads
+            for site planning.
+          </p>
+          <div class="callout">
+            <strong>Core routes:</strong> <code>/materials</code>,
+            <code>/source-models/*</code>,
+            <code>/dispersion/*</code>,
+            <code>/toxic-criteria/lookup</code>,
+            <code>/visualization/solve</code>
+          </div>
+        </article>
+
+        <article class="use-case-card" id="signs">
+          <p class="eyebrow">Use Case</p>
+          <h2>Field sign analysis from a photo</h2>
+          <p>
+            A user walking a site or corridor can capture a sign, pass the text
+            or OCR output to the sign-analysis endpoint, and receive a seeded
+            Deep Safety workflow that suggests relevant scenarios and inputs.
+          </p>
+          <div class="callout">
+            <strong>Core route:</strong> <code>POST /signs/analyze</code>
+          </div>
+        </article>
+
+        <article class="use-case-card" id="hazop">
+          <p class="eyebrow">Use Case</p>
+          <h2>HAZOP support with linked consequence outputs</h2>
+          <p>
+            Use the same material, source, and consequence outputs to populate a
+            HAZOP note set so the team is not manually copying disconnected
+            values between tools.
+          </p>
+          <div class="callout">
+            <strong>Core routes:</strong> <code>/source-models/*</code>,
+            <code>/dispersion/*</code>, <code>/effect-models/solve</code>,
+            <code>/hazard-evaluation/hazop</code>
+          </div>
+        </article>
+
+        <article class="use-case-card">
+          <p class="eyebrow">Use Case</p>
+          <h2>Notebook-driven safety studies</h2>
+          <p>
+            Teams can use Jupyter to compare multiple scenarios, sweep hole
+            size, pressure, or meteorology, and generate plots or reports from
+            one install target.
+          </p>
+          <div class="callout">
+            <strong>Why it works:</strong> the same package, constants registry,
+            and model contract are available in notebooks and in the API.
+          </div>
+        </article>
+
+        <article class="use-case-card">
+          <p class="eyebrow">Use Case</p>
+          <h2>Agent-driven process safety tooling</h2>
+          <p>
+            Since the MCP bridge exposes the same model surface, agents can
+            query materials, propose a scenario, run source and dispersion
+            calculations, and explain results with the same equations and
+            constant metadata shown to human users.
+          </p>
+          <div class="callout">
+            <strong>Core interfaces:</strong> HTTP API, Python package, and
+            <code>deepsafety-mcp</code>
+          </div>
+        </article>
+      </section>
+    </div>
+  </body>
+</html>

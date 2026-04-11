@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deep Safety API Docs</title>
+    <title>Deep Safety API Reference</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,20 +19,22 @@
           <div class="brand-mark">DS</div>
           <div class="brand-text">
             <strong>Deep Safety</strong>
-            <span>API docs</span>
+            <span>API reference</span>
           </div>
         </div>
         <div class="nav-links">
-          <a href="./index.html">Home</a>
+          <a href="./index.html">Docs Home</a>
+          <a class="is-active" href="./api-docs.html">API Reference</a>
+          <a href="./tutorials.html">Tutorials</a>
+          <a href="./use-cases.html">Use Cases</a>
           <a href="./app.html">App</a>
-          <a class="is-active" href="./api-docs.html">API Docs</a>
           <a href="./readme.html">README</a>
         </div>
       </nav>
 
       <header class="page-title">
-        <p class="eyebrow">API Docs</p>
-        <h1>Build on Deep Safety with a stable modeling chain.</h1>
+        <p class="eyebrow">API Reference</p>
+        <h1>Organized module-by-module for direct application integration.</h1>
         <p>
           The API follows the physical workflow: materials and conditions feed
           scenario and source models, source models feed dispersion, and those
@@ -41,222 +43,380 @@
           endpoints below to integrate immediately.
         </p>
       </header>
+      <div class="doc-tabs">
+        <a class="doc-tab is-active" href="./api-docs.html">API Reference</a>
+        <a class="doc-tab" href="./tutorials.html">Tutorials</a>
+        <a class="doc-tab" href="./use-cases.html">Use Cases</a>
+        <a class="doc-tab" href="./readme.html">README</a>
+      </div>
 
-      <section class="cards-grid">
-        <article class="feature-card">
-          <h3>HTTP runtime</h3>
-          <p>Run the full OpenAPI-aligned FastAPI service with Docker or your own host.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Browser-local runtime</h3>
-          <p>Use <code>browser://local</code> for the core interactive consequence workflow directly in GitHub Pages.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Agent surface</h3>
-          <p>The MCP server and Python client expose the same contract for agent-driven and notebook-driven use.</p>
-        </article>
-      </section>
+      <section class="docs-home-grid">
+        <aside class="docs-sidebar">
+          <div class="sidebar-title" id="overview">
+            <p class="eyebrow">Reference Index</p>
+            <h2>Module Families</h2>
+          </div>
+          <div class="sidebar-group">
+            <ul class="sidebar-links">
+              <li><a href="#overview">Overview</a></li>
+              <li><a href="#materials">Materials</a></li>
+              <li><a href="#health">Health and industrial hygiene</a></li>
+              <li><a href="#source-models">Scenario and source models</a></li>
+              <li><a href="#dispersion">Dispersion</a></li>
+              <li><a href="#fire-explosion">Fire and explosion</a></li>
+              <li><a href="#prevention-relief">Prevention and relief</a></li>
+              <li><a href="#hazard-evaluation">Hazard evaluation</a></li>
+              <li><a href="#constants">Constants and provenance</a></li>
+            </ul>
+          </div>
+          <p class="toc-note">
+            This page is designed as a reference index rather than a single
+            tutorial narrative.
+          </p>
+        </aside>
 
-      <section class="card stack">
-        <div class="panel-header">
-          <h2>Quick Start</h2>
-          <p>Three ways to start using the API surface.</p>
-        </div>
-        <div class="two-col">
-          <div class="code-block">
-            <pre><code># Python package
-pip install deepsafety
+        <main class="docs-content">
+          <section class="doc-section">
+            <p class="eyebrow">Overview</p>
+            <h2>How to read the API</h2>
+            <p class="section-intro">
+              The API is arranged upstream-to-downstream. Materials and
+              operating data support scenario selection. Scenario selection
+              drives source models. Source models generate release information
+              for dispersion, fire, explosion, and effect modules. Those
+              outputs then support hazard-analysis workflows and map-facing
+              application layers.
+            </p>
+            <div class="equation-panel">
+              <pre>materials -> scenario -> source -> dispersion/effects -> hazard evaluation</pre>
+            </div>
+          </section>
 
-from deepsafety import DeepSafetyClient
+          <section class="doc-section" id="materials">
+            <p class="eyebrow">Module</p>
+            <h2>Materials</h2>
+            <p class="section-intro">
+              Material records provide upstream physical properties,
+              toxicological data, flammability information, and reactivity
+              screening inputs. These records are packaged as registry data
+              rather than embedded directly in model code.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Purpose</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>GET /materials</code></td>
+                  <td>List or search material records.</td>
+                  <td>Use first when building selector UIs and notebook workflows.</td>
+                </tr>
+                <tr>
+                  <td><code>GET /materials/{materialId}</code></td>
+                  <td>Fetch a material record with physical-property context.</td>
+                  <td>Use as the canonical record for source-term setup.</td>
+                </tr>
+                <tr>
+                  <td><code>GET /materials/{materialId}/toxicity</code></td>
+                  <td>Fetch toxic criteria starter data for the material.</td>
+                  <td>Supports AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoint workflows.</td>
+                </tr>
+                <tr>
+                  <td><code>GET /materials/{materialId}/flammability</code></td>
+                  <td>Fetch flammability-relevant material details.</td>
+                  <td>Useful upstream of ignition and fire calculations.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-client = DeepSafetyClient("http://127.0.0.1:8000")
-materials = client.list_materials("ammonia")
-scenario = client.select_release_scenario(
-    {"scenarioType": "worst_case", "equipmentType": "pipe"}
-)</code></pre>
-          </div>
-          <div class="code-block">
-            <pre><code>// Browser-local runtime
-const plume = await window.DeepSafetyBrowserApi.request(
-  "POST",
-  "/dispersion-models/solve",
-  {
-    model_type: "gaussian_puff",
-    inputs: {
-      released_mass_kg: 25,
-      wind_speed_m_s: 3.0,
-      stability_class: "D",
-      x_m: 100,
-      y_m: 0,
-      z_m: 0
-    }
-  }
-);</code></pre>
-          </div>
-        </div>
-        <div class="callout">
-          <strong>OpenAPI:</strong> fetch <code>/openapi.json</code> from the deployed service for code generation and downstream application contracts.
-        </div>
-      </section>
+          <section class="doc-section" id="health">
+            <p class="eyebrow">Module</p>
+            <h2>Health and Industrial Hygiene</h2>
+            <p class="section-intro">
+              These routes support concentration conversion, exposure screening,
+              probit evaluation, TWA calculations, ventilation screening, and
+              occupational-style interpretations that often sit beside
+              consequence models in applications.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Representative endpoints</th>
+                  <th>Inputs</th>
+                  <th>Outputs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /health/convert-concentration</code></td>
+                  <td>ppm, mg/m3, molecular weight, temperature</td>
+                  <td>converted concentration and unit-aware metadata</td>
+                </tr>
+                <tr>
+                  <td><code>POST /health/probit/evaluate</code></td>
+                  <td>dose variable, coefficients, exposure duration</td>
+                  <td>probit value and estimated response probability</td>
+                </tr>
+                <tr>
+                  <td><code>POST /industrial-hygiene/ventilation/dilution</code></td>
+                  <td>generation rate, room volume, air changes</td>
+                  <td>steady-state screening concentration</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-      <section class="docs-grid">
-        <article class="card stack">
-          <div class="panel-header">
-            <h2>Model Chain</h2>
-            <p>The API groups are intentionally upstream-to-downstream.</p>
-          </div>
-          <div class="callout">
-            <strong>1. Materials:</strong> physical properties, toxicity, flammability, and reactivity starter data.
-          </div>
-          <div class="callout">
-            <strong>2. Scenario and source:</strong> realistic-case, worst-case, and conservative source-term calculations.
-          </div>
-          <div class="callout">
-            <strong>3. Dispersion and effects:</strong> concentration, radiation, blast, and human-impact calculations.
-          </div>
-          <div class="callout">
-            <strong>4. Hazard evaluation:</strong> HAZOP, FMEA, What-If, checklist, and input-validation workflows.
-          </div>
-        </article>
+          <section class="doc-section" id="source-models">
+            <p class="eyebrow">Module</p>
+            <h2>Scenario and Source Models</h2>
+            <p class="section-intro">
+              This family converts inventory, geometry, pressure, temperature,
+              and failure assumptions into release rate, release duration, total
+              released mass, and phase-state information. Realistic-case,
+              worst-case, and conservative analysis are first-class API choices.
+            </p>
+            <div class="equation-panel">
+              <pre>Choked gas release
+m_dot = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1)))</pre>
+            </div>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Examples</th>
+                  <th>Why it matters</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>scenario</code></td>
+                  <td><code>POST /scenario-engine/define</code>, <code>POST /source-models/scenario/select</code></td>
+                  <td>Separates realistic and worst-case assumptions explicitly.</td>
+                </tr>
+                <tr>
+                  <td><code>gas release</code></td>
+                  <td><code>POST /source-models/gas-hole</code>, <code>POST /source-models/gas-pipe</code></td>
+                  <td>Pipe and hole discharge with choked and non-choked screening.</td>
+                </tr>
+                <tr>
+                  <td><code>liquid release</code></td>
+                  <td><code>POST /source-models/liquid-hole</code>, <code>POST /source-models/tank-hole</code></td>
+                  <td>Hydrostatic and pipe-based outflow.</td>
+                </tr>
+                <tr>
+                  <td><code>phase change</code></td>
+                  <td><code>POST /source-models/flashing-liquid</code>, <code>POST /source-models/conservative-analysis</code></td>
+                  <td>Flashing fraction, rainout, and conservative release handling.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-        <article class="card stack">
-          <div class="panel-header">
-            <h2>Foundational Inputs</h2>
-            <p>These are the upstream data classes the API expects applications to manage explicitly.</p>
-          </div>
-          <ul class="doc-list">
-            <li>Chemical physical properties, toxicity, flammability, and reactivity</li>
-            <li>Equipment geometry, inventory, and design data</li>
-            <li>Operating conditions such as temperature, pressure, and flow</li>
-            <li>Meteorology including wind speed, stability class, release height, and topography</li>
-            <li>Realistic, worst-case, and conservative scenario selections as first-class API choices</li>
-            <li>Starter registry files packaged separately from Python code for materials, toxic criteria, and constants</li>
-          </ul>
-        </article>
-      </section>
-
-      <section class="card">
-        <div class="panel-header">
-          <h2>Endpoint Groups</h2>
-          <p>These are the main families application developers usually wire first.</p>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Family</th>
-                <th>Representative endpoints</th>
-                <th>Purpose</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>materials</code></td>
-                <td><code>GET /materials</code>, <code>GET /materials/{materialId}/toxicity</code></td>
-                <td>Foundational material data used by the rest of the modeling chain.</td>
-              </tr>
-              <tr>
-                <td><code>health</code></td>
-                <td><code>POST /health/convert-concentration</code>, <code>POST /health/probit/evaluate</code></td>
-                <td>Toxicology and industrial-hygiene utilities for exposure assessment.</td>
-              </tr>
-              <tr>
-                <td><code>scenario + source</code></td>
-                <td><code>POST /scenario-engine/define</code>, <code>POST /source-models/gas-hole</code>, <code>POST /source-models/scenario/select</code></td>
-                <td>Turn inventory, geometry, and failure mode into release rate, duration, and phase state.</td>
-              </tr>
-              <tr>
-                <td><code>dispersion</code></td>
-                <td><code>POST /dispersion/gaussian-plume</code>, <code>POST /dispersion/dense-gas</code>, <code>POST /dispersion/isopleth</code></td>
-                <td>Convert source terms into concentration fields, isopleths, and toxic-endpoint distances.</td>
-              </tr>
-              <tr>
-                <td><code>fire + explosion</code></td>
-                <td><code>POST /fire-explosion/flammability/mixture</code>, <code>POST /fire-explosion/vce</code>, <code>POST /fire-explosion/bleve</code></td>
-                <td>Translate flammable releases into ignition, blast, and BLEVE-style screening outputs.</td>
-              </tr>
-              <tr>
-                <td><code>prevention + relief</code></td>
-                <td><code>POST /prevention/inerting/purge</code>, <code>POST /relief/system/analyze</code></td>
-                <td>Evaluate purging, classification, fire protection, and relief-system decisions.</td>
-              </tr>
-              <tr>
-                <td><code>hazard evaluation</code></td>
-                <td><code>POST /hazard-evaluation/hazop</code>, <code>POST /hazard-evaluation/fmea</code>, <code>POST /hazard-evaluation/what-if-checklist</code></td>
-                <td>Use physical results in structured process-hazard-analysis workflows.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="docs-grid">
-        <article class="card stack">
-          <div class="panel-header">
-            <h2>Physics Transparency</h2>
-            <p>Deep Safety exposes equations and constants so applications can show the math, not hide it.</p>
-          </div>
-          <div class="code-block">
-            <pre><code>Gas release, choked flow
-m_dot = C_d * A * P_0 * sqrt(
-  k / (Z * R * T_0) * (2 / (k + 1))^((k + 1) / (k - 1))
-)
-
-Gaussian plume
+          <section class="doc-section" id="dispersion">
+            <p class="eyebrow">Module</p>
+            <h2>Dispersion</h2>
+            <p class="section-intro">
+              Dispersion routes transform source-term outputs into concentration
+              fields, threshold-distance screens, isopleths, and map-ready
+              payloads. Continuous releases, puff releases, and dense-gas
+              screening are separated so applications can choose the proper
+              release interpretation.
+            </p>
+            <div class="equation-panel">
+              <pre>Gaussian plume
 C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
   * exp(-y^2 / (2 * sigma_y^2))
-  * [exp(-(z-H)^2 / (2 * sigma_z^2)) + exp(-(z+H)^2 / (2 * sigma_z^2))]
+  * [exp(-(z-H)^2 / (2 * sigma_z^2)) + exp(-(z+H)^2 / (2 * sigma_z^2))]</pre>
+            </div>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Representative endpoints</th>
+                  <th>Typical inputs</th>
+                  <th>Typical outputs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /dispersion/gaussian-plume</code></td>
+                  <td>release rate, wind speed, stability class, receptor location</td>
+                  <td>concentration at receptor and supporting metadata</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/gaussian-puff</code></td>
+                  <td>released mass, wind speed, stability class, receptor location</td>
+                  <td>instantaneous puff concentration screening</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/isopleth</code></td>
+                  <td>source term plus selected toxic threshold</td>
+                  <td>distance and contour-ready values</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-Thermal radiation
-q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</code></pre>
-          </div>
-          <ul class="doc-list">
-            <li><code>shared.gravity_standard</code>: gravitational acceleration driving hydrostatic liquid discharge.</li>
-            <li><code>shared.universal_gas_constant</code>: links pressure, temperature, and molar volume in gas release calculations.</li>
-            <li><code>fire.default_radiative_fraction</code>: fraction of combustion energy assumed to emerge as thermal radiation.</li>
-            <li><code>fire.default_atmospheric_transmissivity</code>: fraction of thermal radiation assumed to survive the path to the receptor.</li>
-          </ul>
-        </article>
+          <section class="doc-section" id="fire-explosion">
+            <p class="eyebrow">Module</p>
+            <h2>Fire and Explosion</h2>
+            <p class="section-intro">
+              These routes convert flammable releases into ignition, fire,
+              explosion, blast, and BLEVE screening outputs. They are structured
+              so applications can chain flammability, source, ignition, and
+              damage calculations without collapsing everything into one call.
+            </p>
+            <div class="equation-panel">
+              <pre>Thermal radiation
+q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
+            </div>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Submodule</th>
+                  <th>Representative endpoints</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Fire</td>
+                  <td><code>POST /fire-explosion/bleve</code>, plus <code>/fire-explosion-models/solve</code> for <code>jet_fire</code> and <code>pool_fire</code></td>
+                  <td>Jet fire, pool fire, and fireball/BLEVE screening are supported.</td>
+                </tr>
+                <tr>
+                  <td>Explosion</td>
+                  <td><code>POST /fire-explosion/tnt-equivalency</code>, <code>POST /fire-explosion/multi-energy</code>, <code>POST /fire-explosion/vce</code></td>
+                  <td>VCE severity is driven by cloud size, ignition delay, and congestion.</td>
+                </tr>
+                <tr>
+                  <td>Flammability</td>
+                  <td><code>POST /fire-explosion/flammability/mixture</code>, <code>POST /fire-explosion/loc</code>, <code>POST /fire-explosion/ignition-energy</code></td>
+                  <td>Supports ignition and inerting-oriented integrations.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-        <article class="card stack">
-          <div class="panel-header">
-            <h2>Scenario Example</h2>
-            <p>A typical application flow from source selection to hazard study.</p>
-          </div>
-          <div class="code-block">
-            <pre><code>{
-  "scenarioType": "worst_case",
-  "equipmentType": "pipe",
-  "inventoryMass": 1000,
-  "siteTopography": "urban"
-}</code></pre>
-          </div>
-          <div class="callout">
-            <strong>Step 1:</strong> call <code>/source-models/scenario/select</code> to make realistic or worst-case assumptions explicit.
-          </div>
-          <div class="callout">
-            <strong>Step 2:</strong> call a source route such as <code>/source-models/gas-pipe</code> or <code>/source-models/flashing-liquid</code>.
-          </div>
-          <div class="callout">
-            <strong>Step 3:</strong> feed the source output into <code>/dispersion/*</code> and then into <code>/hazard-evaluation/*</code>.
-          </div>
-        </article>
-      </section>
+          <section class="doc-section" id="prevention-relief">
+            <p class="eyebrow">Module</p>
+            <h2>Prevention, Reactivity, and Relief</h2>
+            <p class="section-intro">
+              These modules support inerting, static electricity screening, area
+              classification, relief selection and sizing, and reactivity
+              screening so teams can connect consequence outputs back to design
+              and safeguard decisions.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Family</th>
+                  <th>Representative endpoints</th>
+                  <th>Use</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Prevention</td>
+                  <td><code>POST /prevention/inerting/purge</code>, <code>POST /prevention/area-classification</code></td>
+                  <td>Supports design review and ignition-risk reduction.</td>
+                </tr>
+                <tr>
+                  <td>Reactivity</td>
+                  <td><code>POST /reactivity/calorimetry/interpret</code>, <code>POST /reactivity/screening</code></td>
+                  <td>Supports reactive-chemistry screening and control framing.</td>
+                </tr>
+                <tr>
+                  <td>Relief</td>
+                  <td><code>POST /relief/devices/select</code>, <code>POST /relief/sizing/gas-vapor</code></td>
+                  <td>Supports discharge-path and emergency-relief analysis.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-      <section class="card stack">
-        <div class="panel-header">
-          <h2>Runtime Notes</h2>
-          <p>Choose the execution boundary that fits the application.</p>
-        </div>
-        <div class="callout">
-          <strong>Browser-local:</strong> best for lightweight interactive screening, GitHub Pages demos, and embedded tools.
-        </div>
-        <div class="callout">
-          <strong>HTTP API:</strong> best for the full OpenAPI-aligned endpoint surface, shared services, notebooks, and production integrations.
-        </div>
-        <div class="callout">
-          <strong>MCP server:</strong> best when tools and agents need the same calculations through a standardized callable surface.
-        </div>
+          <section class="doc-section" id="hazard-evaluation">
+            <p class="eyebrow">Module</p>
+            <h2>Hazard Evaluation</h2>
+            <p class="section-intro">
+              Hazard-evaluation routes are meant to consume the physical outputs
+              of upstream models rather than stand alone as isolated templates.
+              This keeps scenario-based workflows anchored to the same source,
+              dispersion, and effect assumptions used elsewhere in the API.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Purpose</th>
+                  <th>Typical application</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /hazard-evaluation/hazop</code></td>
+                  <td>Guideword-driven node review with explicit consequence hooks.</td>
+                  <td>PHA workshops and structured design review.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /hazard-evaluation/fmea</code></td>
+                  <td>Failure mode oriented hazard review.</td>
+                  <td>Equipment-focused integrity and controls review.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /hazard-evaluation/what-if</code></td>
+                  <td>What-if scenario generation from inputs and assumptions.</td>
+                  <td>Fast early-stage or field review workflows.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="doc-section" id="constants">
+            <p class="eyebrow">Provenance</p>
+            <h2>Constants and physical meaning</h2>
+            <p class="section-intro">
+              Deep Safety keeps shared constants and starter screening defaults
+              in packaged JSON registries. The intention is to make hard-coded
+              assumptions explicit and inspectable.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Constant</th>
+                  <th>Physical meaning</th>
+                  <th>Where it is used</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>shared.gravity_standard</code></td>
+                  <td>Standard terrestrial gravitational acceleration.</td>
+                  <td>Hydrostatic liquid outflow and tank discharge relations.</td>
+                </tr>
+                <tr>
+                  <td><code>shared.universal_gas_constant</code></td>
+                  <td>Ideal-gas proportionality between pressure, molar volume, and temperature.</td>
+                  <td>Compressible gas discharge and gas-state conversions.</td>
+                </tr>
+                <tr>
+                  <td><code>fire.default_radiative_fraction</code></td>
+                  <td>Fraction of combustion energy treated as radiant heat.</td>
+                  <td>Jet fire, pool fire, fireball, and heat-flux screening.</td>
+                </tr>
+                <tr>
+                  <td><code>gis.earth_radius_m</code></td>
+                  <td>Mean Earth radius used in map-distance approximations.</td>
+                  <td>GIS impact-zone calculations and map overlays.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </main>
       </section>
     </div>
   </body>

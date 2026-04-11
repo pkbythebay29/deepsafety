@@ -302,6 +302,8 @@ The Pages site is split into separate pages:
 - `index.html` for the product landing page
 - `app.html` for the interactive map workflow
 - `api-docs.html` for API-first documentation
+- `tutorials.html` for training guides and step-by-step onboarding
+- `use-cases.html` for worked application examples and integration patterns
 - `readme.html` for a web version of the repository README
 
 ## Jupyter Notebook

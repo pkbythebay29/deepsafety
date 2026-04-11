@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Safety Tutorials</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <nav class="site-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark">DS</div>
+          <div class="brand-text">
+            <strong>Deep Safety</strong>
+            <span>Tutorials</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="./index.html">Docs Home</a>
+          <a href="./api-docs.html">API Reference</a>
+          <a class="is-active" href="./tutorials.html">Tutorials</a>
+          <a href="./use-cases.html">Use Cases</a>
+          <a href="./app.html">App</a>
+          <a href="./readme.html">README</a>
+        </div>
+      </nav>
+
+      <header class="page-title">
+        <p class="eyebrow">Tutorials</p>
+        <h1>Training guides for package users, API integrators, and browser users.</h1>
+        <p class="doc-copy">
+          These tutorials are designed to shorten the time between first install
+          and a working application. Each guide is intentionally practical and
+          follows the same model chain used by the API itself.
+        </p>
+      </header>
+
+      <div class="doc-tabs">
+        <a class="doc-tab" href="./api-docs.html">API Reference</a>
+        <a class="doc-tab is-active" href="./tutorials.html">Tutorials</a>
+        <a class="doc-tab" href="./use-cases.html">Use Cases</a>
+        <a class="doc-tab" href="./readme.html">README</a>
+      </div>
+
+      <section class="tutorial-grid">
+        <article class="tutorial-card" id="quickstart">
+          <p class="eyebrow">Quick Start</p>
+          <h2>Get to first result in ten minutes</h2>
+          <p>
+            Install the package, inspect available materials, select a scenario,
+            run a source calculation, and feed the result into dispersion.
+          </p>
+          <div class="code-block">
+            <pre><code>pip install deepsafety
+
+from deepsafety import DeepSafetyClient
+
+client = DeepSafetyClient("http://127.0.0.1:8000")
+materials = client.list_materials("chlorine")
+scenario = client.select_release_scenario({
+    "scenarioType": "worst_case",
+    "equipmentType": "pipe",
+    "inventoryMass": 2500,
+    "siteTopography": "urban"
+})</code></pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card" id="api-training">
+          <p class="eyebrow">API Workflow</p>
+          <h2>Build an API-first consequence workflow</h2>
+          <p>
+            Use materials as the upstream selector, then call source, then
+            dispersion, then effect or hazard-evaluation endpoints.
+          </p>
+          <div class="equation-panel">
+            <pre>1. GET /materials/{materialId}
+2. POST /source-models/scenario/select
+3. POST /source-models/gas-pipe
+4. POST /dispersion/gaussian-plume
+5. POST /effect-models/solve or /hazard-evaluation/*</pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card" id="scenario-training">
+          <p class="eyebrow">Scenario Training</p>
+          <h2>Understand realistic versus worst-case assumptions</h2>
+          <p>
+            Deep Safety keeps realistic, worst-case, and conservative analysis
+            explicit because those are modeling decisions, not hidden defaults.
+          </p>
+          <table class="reference-table">
+            <thead>
+              <tr>
+                <th>Choice</th>
+                <th>Typical intent</th>
+                <th>When to use</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>realistic_case</code></td>
+                <td>Site-informed screening</td>
+                <td>Operational planning and scenario comparison</td>
+              </tr>
+              <tr>
+                <td><code>worst_case</code></td>
+                <td>Highly conservative screening</td>
+                <td>Regulatory-style bounding cases and outer envelopes</td>
+              </tr>
+              <tr>
+                <td><code>conservative-analysis</code></td>
+                <td>Intentional overprediction of the source term</td>
+                <td>Safety margin studies and rapid screening</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="tutorial-card" id="browser-training">
+          <p class="eyebrow">Browser-Local</p>
+          <h2>Use the Pages app without an external backend</h2>
+          <p>
+            The browser-local runtime is useful for demos, lightweight
+            screening, and embedded tools that should work directly on GitHub
+            Pages.
+          </p>
+          <div class="code-block">
+            <pre><code>const result = await window.DeepSafetyBrowserApi.request(
+  "POST",
+  "/gis/impact-zones",
+  {
+    scenarioType: "leak",
+    source: { latitude: 52.52, longitude: 13.405 },
+    config: { released_mass_kg: 50, threshold_kg_m3: 0.02 }
+  }
+);</code></pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card" id="notebook-training">
+          <p class="eyebrow">Jupyter</p>
+          <h2>Explore the package in notebooks</h2>
+          <p>
+            Use the packaged client or the local notebook examples to inspect
+            model metadata, constants, and response payloads before wiring the
+            models into a larger application.
+          </p>
+          <div class="code-block">
+            <pre><code>pip install "deepsafety[jupyter]"
+
+from deepsafety import DeepSafetyClient
+
+client = DeepSafetyClient("http://127.0.0.1:8000")
+catalog = client.get_service_catalog()</code></pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card">
+          <p class="eyebrow">Integration Pattern</p>
+          <h2>Show equations and constants in your own UI</h2>
+          <p>
+            Deep Safety is intended to make the model transparent to the end
+            user. Pull the service catalog and present equations, constants, and
+            physical meanings alongside the form fields that drive them.
+          </p>
+          <div class="callout">
+            <strong>Tip:</strong> combine <code>GET /service-catalog</code> with
+            the module-specific endpoints so the UI shows the actual equation
+            and the physical meaning of each constant near the results.
+          </div>
+        </article>
+      </section>
+    </div>
+  </body>
+</html>
