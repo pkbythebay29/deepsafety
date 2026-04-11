@@ -64,8 +64,10 @@
               <li><a href="#source-models">Scenario and source models</a></li>
               <li><a href="#dispersion">Dispersion</a></li>
               <li><a href="#fire-explosion">Fire and explosion</a></li>
+              <li><a href="#effects">Effects and toxic criteria</a></li>
               <li><a href="#prevention-relief">Prevention and relief</a></li>
               <li><a href="#hazard-evaluation">Hazard evaluation</a></li>
+              <li><a href="#formulas">Analytical formulas</a></li>
               <li><a href="#constants">Constants and provenance</a></li>
             </ul>
           </div>
@@ -169,6 +171,19 @@
                 </tr>
               </tbody>
             </table>
+            <div class="equation-panel">
+              <pre>ppm -> mg/m3
+C_mg/m3 = C_ppm * MW * P / (R_atm * T) * 10^-3
+
+Generic probit
+Y = k1 + k2 * ln(V)
+
+Time-weighted average
+TWA = sum(C_i * t_i) / sum(t_i)
+
+Dilution ventilation screening
+Q_required = G / C_target * mixing_factor</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="source-models">
@@ -213,8 +228,39 @@ m_dot = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1))
                   <td><code>POST /source-models/flashing-liquid</code>, <code>POST /source-models/conservative-analysis</code></td>
                   <td>Flashing fraction, rainout, and conservative release handling.</td>
                 </tr>
+                <tr>
+                  <td><code>scenario templates</code></td>
+                  <td><code>GET /scenario-library/templates</code></td>
+                  <td>Provides application-ready starting points for common release scenarios.</td>
+                </tr>
               </tbody>
             </table>
+            <div class="equation-panel">
+              <pre>Hole or orifice area
+A = pi * d^2 / 4
+
+Pipe friction screening multiplier
+M_f = 1 / sqrt(1 + f * L / D)
+
+Liquid tank-hole release velocity
+v = C_d * sqrt(2 * g * h)
+
+Liquid pipe release velocity
+v = C_d * sqrt(2 * DeltaP / rho)
+
+Volumetric and mass release rate
+Q = A * v
+m_dot = rho * Q
+
+Inventory-limited release mass
+m_total = min(m_dot * t_release, m_inventory)
+
+Flash fraction screening
+f_flash = cp_liquid * (T_storage - T_boil) / DeltaH_vap
+
+Pool area screening
+A_pool = m_liquid / (rho * thickness) * spreading_factor</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="dispersion">
@@ -257,8 +303,36 @@ C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
                   <td>source term plus selected toxic threshold</td>
                   <td>distance and contour-ready values</td>
                 </tr>
+                <tr>
+                  <td><code>POST /dispersion/toxic-endpoints/evaluate</code></td>
+                  <td>stored dispersion result and one or more toxic criteria</td>
+                  <td>max threshold distances and exceeded-area screening</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/prevention-mitigation</code></td>
+                  <td>release rate and mitigation factor</td>
+                  <td>revised scenario parameters after mitigation screening</td>
+                </tr>
               </tbody>
             </table>
+            <div class="equation-panel">
+              <pre>Gaussian plume
+C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
+  * exp(-y^2 / (2 * sigma_y^2))
+  * [exp(-(z-H)^2 / (2 * sigma_z^2)) + exp(-(z+H)^2 / (2 * sigma_z^2))]
+
+Gaussian puff screening
+C = M / ((2 * pi)^(3/2) * sigma_y^2 * sigma_z)
+  * exp(-0.5 * [(y / sigma_y)^2 + (z / sigma_z)^2])
+
+Dense-gas map screening
+C(x,y) ~= M_release / (R_cloud * L_cloud)
+  * exp(-(abs(y)/R_cloud)^2)
+  * exp(-(x/L_cloud)^2)
+
+Mitigated release
+m_dot_revised = m_dot * (1 - mitigation_factor)</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="fire-explosion">
@@ -300,6 +374,89 @@ q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
                 </tr>
               </tbody>
             </table>
+            <div class="equation-panel">
+              <pre>Jet or pool fire radiation
+q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)
+
+Pool burning rate
+m_dot_pool = A_pool * m''_burn
+
+Fireball diameter and duration screening
+D_fb = 5.8 * m_fuel^0.325
+t_fb = 0.45 * m_fuel^0.26
+
+TNT equivalency
+W_TNT = m_fuel * DeltaH_c * eta / DeltaH_TNT
+
+Scaled distance
+Z = R / W_TNT^(1/3)
+
+Overpressure screening
+P = 1772 / Z^3 + 114 / Z^2 + 10.4 / Z
+
+VCE yield factor screening
+eta_vce = min(0.3, 0.03 + 0.005 * t_delay + 0.05 * congestion)</pre>
+            </div>
+          </section>
+
+          <section class="doc-section" id="effects">
+            <p class="eyebrow">Module</p>
+            <h2>Effects and Toxic Criteria</h2>
+            <p class="section-intro">
+              Effect models convert concentration, radiation, or overpressure
+              into consequence metrics such as fatality probability, burn
+              probability, and dose-response curves. Toxic criteria endpoints
+              provide the threshold values these downstream calculations are
+              typically compared against.
+            </p>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Family</th>
+                  <th>Representative endpoints</th>
+                  <th>Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>effect-models</code></td>
+                  <td><code>POST /effect-models/solve</code> with <code>toxic_probit</code>, <code>thermal_probit</code>, <code>explosion_probit</code>, and dose-response variants</td>
+                  <td>Converts physical exposure variables into human-impact screening outputs.</td>
+                </tr>
+                <tr>
+                  <td><code>toxic criteria</code></td>
+                  <td><code>POST /toxic-criteria/lookup</code>, <code>GET /materials/{materialId}/toxicity</code></td>
+                  <td>Returns AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoint starter values.</td>
+                </tr>
+                <tr>
+                  <td><code>population summaries</code></td>
+                  <td>included in effect responses through <code>population_distribution</code> or <code>population_count</code></td>
+                  <td>Estimates expected fatalities or burn cases by exposure zone.</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="equation-panel">
+              <pre>Toxic load
+L_toxic = C^n * t
+
+Toxic probit
+Y = a + b * ln(L_toxic)
+
+Thermal load
+L_thermal = q^(4/3) * t
+
+Thermal probit
+Y = a + b * ln(L_thermal)
+
+Explosion probit
+Y = a + b * ln(P_pa)
+
+Probability from probit
+Pr(response) = 0.5 * [1 + erf((Y - 5) / sqrt(2))]
+
+Expected cases
+E[cases] = population * Pr(response)</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="prevention-relief">
@@ -335,8 +492,35 @@ q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
                   <td><code>POST /relief/devices/select</code>, <code>POST /relief/sizing/gas-vapor</code></td>
                   <td>Supports discharge-path and emergency-relief analysis.</td>
                 </tr>
+                <tr>
+                  <td>Prevention-response screening</td>
+                  <td><code>POST /prevention-response-models/solve</code></td>
+                  <td>Bundles fire triangle, inerting, ignition energy, release prevention, and emergency response screens.</td>
+                </tr>
               </tbody>
             </table>
+            <div class="equation-panel">
+              <pre>Purge gas requirement screening
+V_purge = V_vessel * cycles / purity
+
+Liquid relief sizing
+A_relief = m_dot / (C_d * sqrt(2 * rho * DeltaP))
+
+Gas or vapor relief sizing
+A_relief = m_dot / [C_d * P_set * sqrt(k / (R_specific * T) * (2/(k+1))^((k+1)/(k-1)))]
+
+Two-phase relief screening
+A_relief = m_dot / (25 * sqrt(quality + 0.1))
+
+External fire relief screening
+A_relief = wetted_area * 2.5e-5
+
+Thermal expansion relief screening
+A_relief = V_blocked * beta * DeltaT * 1e-4
+
+Deflagration vent screening
+A_vent = V_enclosure^(2/3) * [K / (Pmax * Pred)] * 0.1</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="hazard-evaluation">
@@ -372,8 +556,69 @@ q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
                   <td>What-if scenario generation from inputs and assumptions.</td>
                   <td>Fast early-stage or field review workflows.</td>
                 </tr>
+                <tr>
+                  <td><code>POST /hazard-evaluation/information-requirements/validate</code></td>
+                  <td>Checks whether the material, equipment, procedure, and operating-condition basis is complete enough for hazard review.</td>
+                  <td>Useful before running structured reviews or agent workflows at scale.</td>
+                </tr>
               </tbody>
             </table>
+          </section>
+
+          <section class="doc-section" id="formulas">
+            <p class="eyebrow">Analytical Reference</p>
+            <h2>Analytical formulas used across the API</h2>
+            <p class="section-intro">
+              This section collects the main screening equations surfaced by
+              the current endpoint families. These are intentionally visible so
+              downstream applications can show the mathematical basis directly
+              in the user interface.
+            </p>
+            <div class="equation-panel">
+              <pre>Scenario and source terms
+A = pi * d^2 / 4
+v_liquid = C_d * sqrt(2 * g * h)
+v_pipe = C_d * sqrt(2 * DeltaP / rho)
+Q = A * v
+m_dot = rho * Q
+m_total = min(m_dot * t_release, m_inventory)
+f_flash = cp_liquid * (T_storage - T_boil) / DeltaH_vap
+A_pool = m_liquid / (rho * thickness) * spreading_factor
+
+Gas release
+m_dot_choked = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1)))
+m_dot_nonchoked = C_d * A * P0 * sqrt((2 * k)/(Z * R * T0 * (k - 1)) * [r^(2/k) - r^((k+1)/k)])
+
+Dispersion
+C_plume = Q_dot / (2 * pi * u * sigma_y * sigma_z) * exp(-y^2 / (2 * sigma_y^2)) * image_term
+C_puff = M / ((2 * pi)^(3/2) * sigma_y^2 * sigma_z) * exp(-0.5 * [(y / sigma_y)^2 + (z / sigma_z)^2])
+C_dense ~= M_release / (R_cloud * L_cloud) * exp(-(abs(y)/R_cloud)^2) * exp(-(x/L_cloud)^2)
+
+Fire and explosion
+q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)
+m_dot_pool = A_pool * m''_burn
+D_fb = 5.8 * m_fuel^0.325
+t_fb = 0.45 * m_fuel^0.26
+W_TNT = m_fuel * DeltaH_c * eta / DeltaH_TNT
+Z = R / W_TNT^(1/3)
+P = 1772 / Z^3 + 114 / Z^2 + 10.4 / Z
+
+Effects and exposure
+C_mg/m3 = C_ppm * MW * P / (R_atm * T) * 10^-3
+TWA = sum(C_i * t_i) / sum(t_i)
+Y = a + b * ln(C^n * t)
+Y = a + b * ln(q^(4/3) * t)
+Y = a + b * ln(P_pa)
+Pr(response) = 0.5 * [1 + erf((Y - 5) / sqrt(2))]
+E[cases] = population * Pr(response)
+
+Relief and prevention
+V_purge = V_vessel * cycles / purity
+A_relief_liquid = m_dot / (C_d * sqrt(2 * rho * DeltaP))
+A_relief_gas = m_dot / [C_d * P_set * sqrt(k / (R_specific * T) * (2/(k+1))^((k+1)/(k-1)))]
+A_relief_two_phase = m_dot / (25 * sqrt(quality + 0.1))
+A_vent = V_enclosure^(2/3) * [K / (Pmax * Pred)] * 0.1</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="constants">
@@ -418,6 +663,11 @@ q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
           </section>
         </main>
       </section>
+
+      <p class="footer-note">
+        Copyright Pranav Kannan 2026.
+        <a href="https://github.com/pkbythebay29">GitHub</a>
+      </p>
     </div>
   </body>
 </html>
