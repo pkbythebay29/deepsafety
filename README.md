@@ -1,34 +1,36 @@
 # DeepSafety
-**DeepSafety** is an open-source process safety consequence-analysis platform. It includes a Python library, a FastAPI service, a browser-local runtime for GitHub Pages, an MCP bridge, and a Jupyter notebook so the same calculations can be embedded into web apps, engineering tools, agent workflows, and exploratory engineering analysis.
+**DeepSafety** is an open-source process safety analysis platform packaged as one Python install target, one FastAPI service, one MCP bridge, and one browser-local runtime for GitHub Pages.
+
+## Modeling Chain
+
+The API is organized around the actual modeling chain:
+
+1. `materials` and operating/design data define the upstream physical and toxicological basis.
+2. `scenario-engine` and `source-models` define realistic, worst-case, and conservative releases.
+3. `dispersion` and `effect-models` translate the source term into concentration, radiation, blast, and human-impact outputs.
+4. `hazard-evaluation` workflows use those outputs in HAZOP, FMEA, What-If, checklist, and related studies.
+
+That structure is important: source-term outputs are meant to feed dispersion, and dispersion/effect outputs are meant to feed scenario-based hazard studies rather than live as disconnected calculators.
 
 ## Implemented API Capabilities
 
-- Atmospheric dispersion models (Pasquill-Gifford)
-  - Puff and plume models
-  - ground-level and elevated-source screening
-  - dense-gas screening and neutrally buoyant screening relations
-- Toxic effect criteria
-  - starter toxic criteria registry for AEGL, ERPG, IDLH, TLV, PEL, and toxic endpoints
-  - toxic probit and toxic dose-response services
-- Flammability and ignition analysis
-  - flammability limits
-  - autoignition screening
-  - inerting requirement screening
-  - ignition energy screening
-- Explosion modeling
-  - TNT equivalency
-  - VCE
-  - BLEVE fireball
-  - deflagration screening
-  - detonation screening
-  - blast damage screening
-  - mitigation screening
-- Fire triangle modeling and spray/mist behavior
-  - fire triangle screening
-  - spray/mist fire screening
-- Release prevention and emergency response planning
-  - release prevention screening
-  - emergency response planning screening
+- Foundational material records with physical properties, toxicity, flammability, and reactivity starter data
+- Scenario definition and scenario-library templates for realistic-case, worst-case, and conservative-analysis workflows
+- Source models for gas/vapor release, liquid release, flashing, pool formation, and evaporation
+- Dispersion models for Gaussian plume, Gaussian puff, dense-gas screening, isopleths, toxic-endpoint evaluation, and mitigation-adjusted releases
+- Fire and explosion models for flammability mixtures, LOC, ignition energy, jet fire, pool fire, fireball/BLEVE, TNT equivalency, multi-energy, VCE, deflagration, detonation, blast damage, and mitigation screening
+- Health and industrial-hygiene utilities for concentration conversion, probit evaluation, TWA, exposure compliance, ventilation, and pool evaporation
+- Prevention, reactivity, and relief-system endpoints for purging, static electricity, area classification, fire protection, calorimetry interpretation, reactivity screening/control, relief selection, and relief sizing
+- Hazard-evaluation workflows for checklist, safety review, inherent safety review, preliminary hazard analysis, relative ranking, HAZOP, FMEA, What-If, What-If/Checklist, and information-requirement validation
+- Visualization, GIS, sign-intelligence, MCP, Docker, browser-local, and Jupyter integration surfaces
+
+## Data Provenance
+
+- Starter material records are packaged in `deepsafety/data/materials_registry.json`
+- Starter toxic criteria are packaged in `deepsafety/data/toxic_criteria_registry.json`
+- Shared physical constants and screening defaults are packaged in `deepsafety/data/constants_registry.json`
+
+Material properties are not embedded directly in Python code. The packaged registries are the source of truth for starter data, and each registry includes provenance notes so the origin and intended use are explicit.
 
 ## License
 This project is licensed under the MIT License. 
@@ -41,23 +43,20 @@ Contributions are welcome. Please fork the repository, open a pull request, and 
 
 The HTTP service now exposes:
 
-- `GET /models` for discovery
-- `GET /models/{model_id}` for equations, constants, and I/O definitions
-- `POST /models/{model_id}/calculate` for direct model execution
-- `GET /constants` and `GET /constants/{model_id}` for the modifiable default constants registry
-- `GET /scenarios` for scenario-driven discovery
-- `POST /scenario-engine/define` for incident builder + classification normalization
-- `GET /scenario-library/templates` for prebuilt scenario templates
-- `POST /source-models/solve` for source-term screening models
-- `POST /dispersion-models/solve` for plume, puff, and dense-gas screening
-- `POST /fire-explosion-models/solve` for fire and explosion screening models
-- `POST /effect-models/solve` for toxic, thermal, and explosion effects
-- `POST /toxic-criteria/lookup` for starter AEGL, ERPG, IDLH, TLV, PEL, and toxic-endpoint lookup
-- `POST /prevention-response-models/solve` for ignition, inerting, spray/mist, prevention, and emergency-response screening
-- `POST /signs/analyze` for sign intelligence that turns OCR or manually entered sign text into a leak-ready scenario seed
-- `POST /visualization/solve` for plume maps, contours, and time-evolution payloads
-- `POST /gis/scenarios/evaluate` for source-pin and receptor-pin workflows
-- `POST /gis/impact-zones` for map-ready impact circles
+- `GET /models`, `GET /models/{model_id}`, `POST /models/{model_id}/calculate`
+- `GET /constants`, `GET /constants/{model_id}`, `GET /service-catalog`
+- `GET /materials`, `GET /materials/{materialId}`, `GET /materials/{materialId}/toxicity`, `GET /materials/{materialId}/flammability`, `GET /materials/{materialId}/reactivity`
+- `POST /health/convert-concentration`, `POST /health/probit/evaluate`, `POST /health/exposure/twa`, `POST /health/exposure/compliance`
+- `POST /industrial-hygiene/ventilation/dilution`, `POST /industrial-hygiene/ventilation/local-exhaust`, `POST /industrial-hygiene/liquid-pool/evaporation`
+- `POST /scenario-engine/define`, `GET /scenario-library/templates`
+- `POST /source-models/liquid-hole`, `POST /source-models/tank-hole`, `POST /source-models/liquid-pipe`, `POST /source-models/gas-hole`, `POST /source-models/gas-pipe`, `POST /source-models/flashing-liquid`, `POST /source-models/scenario/select`, `POST /source-models/conservative-analysis`
+- `POST /dispersion/gaussian-plume`, `POST /dispersion/gaussian-puff`, `POST /dispersion/dense-gas`, `POST /dispersion/isopleth`, `POST /dispersion/toxic-endpoints/evaluate`, `POST /dispersion/prevention-mitigation`
+- `POST /fire-explosion/flammability/mixture`, `POST /fire-explosion/loc`, `POST /fire-explosion/ignition-energy`, `POST /fire-explosion/tnt-equivalency`, `POST /fire-explosion/multi-energy`, `POST /fire-explosion/vce`, `POST /fire-explosion/bleve`
+- `POST /prevention/inerting/purge`, `POST /prevention/static-electricity/risk`, `POST /prevention/area-classification`, `POST /prevention/fire-protection/strategy`
+- `POST /reactivity/calorimetry/interpret`, `POST /reactivity/screening`, `POST /reactivity/control`
+- `POST /relief/devices/select`, `POST /relief/system/analyze`, `POST /relief/effluent-handling/select`, `POST /relief/sizing/liquid`, `POST /relief/sizing/gas-vapor`, `POST /relief/sizing/two-phase`, `POST /relief/sizing/deflagration-vent`, `POST /relief/sizing/external-fire`, `POST /relief/sizing/thermal-expansion`
+- `POST /hazard-evaluation/checklist`, `POST /hazard-evaluation/safety-review`, `POST /hazard-evaluation/inherent-safety-review`, `POST /hazard-evaluation/preliminary-hazard-analysis`, `POST /hazard-evaluation/relative-ranking`, `POST /hazard-evaluation/hazop`, `POST /hazard-evaluation/fmea`, `POST /hazard-evaluation/what-if`, `POST /hazard-evaluation/what-if-checklist`, `POST /hazard-evaluation/information-requirements/validate`
+- `POST /effect-models/solve`, `POST /toxic-criteria/lookup`, `POST /prevention-response-models/solve`, `POST /visualization/solve`, `POST /signs/analyze`, `POST /gis/scenarios/evaluate`, `POST /gis/impact-zones`
 
 Each model documents the equations used and the constants applied in the response itself.
 
@@ -216,6 +215,8 @@ The registry already includes placeholders so downstream applications can integr
 Default constants include:
 
 - `shared.pi`
+- `shared.gravity_standard`
+- `shared.universal_gas_constant`
 - `shared.absolute_zero_offset_c`
 - `shared.reference_temperature_c`
 - `fire.default_radiative_fraction`
@@ -227,31 +228,50 @@ Default constants include:
 
 - Value: `3.141592653589793`
 - Unit: `dimensionless`
-- Use: Gaussian and radiation equations
+- Physical meaning: geometric ratio between circumference and diameter
+- Use: Gaussian plume/puff normalization, circular pool area, circular impact areas, and point-source radiation geometry
+
+`shared.gravity_standard`
+
+- Value: `9.80665`
+- Unit: `m/s^2`
+- Physical meaning: standard terrestrial gravitational acceleration
+- Use: gravity-driven tank discharge, liquid outflow velocity, and hydrostatic source-term relations
+
+`shared.universal_gas_constant`
+
+- Value: `8.314462618`
+- Unit: `J/mol/K`
+- Physical meaning: proportionality constant linking pressure, molar volume, and absolute temperature for gases
+- Use: conversion from molecular weight to specific gas constant, compressible gas discharge, and ideal-gas screening conversions
 
 `shared.absolute_zero_offset_c`
 
 - Value: `273.15`
 - Unit: `degC`
-- Use: Celsius-to-Kelvin offset in flammability calculations
+- Physical meaning: Celsius-to-Kelvin offset
+- Use: temperature-dependent flammability and other absolute-temperature conversions
 
 `shared.reference_temperature_c`
 
 - Value: `20.0`
 - Unit: `degC`
+- Physical meaning: baseline reference state used by the screening flammability-limit relation
 - Use: reference temperature for flammability limits
 
 `fire.default_radiative_fraction`
 
 - Value: `0.35`
 - Unit: `fraction`
-- Use: default radiant fraction in fire heat-flux models
+- Physical meaning: fraction of total combustion energy assumed to leave the flame as thermal radiation
+- Use: jet fire, pool fire, and fireball radiant heat-flux screening
 
 `fire.default_atmospheric_transmissivity`
 
 - Value: `1.0`
 - Unit: `fraction`
-- Use: screening transmissivity multiplier in fire heat-flux models
+- Physical meaning: fraction of thermal radiation assumed to pass through the atmosphere to the receptor
+- Use: screening transmissivity multiplier in fire heat-flux and impact-radius calculations
 
 Each request can override model-specific constants without changing the endpoint shape.
 

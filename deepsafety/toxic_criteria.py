@@ -1,62 +1,10 @@
 from __future__ import annotations
 
 from deepsafety.catalog import ModelInputError
+from deepsafety.data_access import load_toxic_criteria_registry
 
 
-TOXIC_CRITERIA_REGISTRY = {
-    "chlorine": {
-        "units": "ppm",
-        "aegl_1": 0.5,
-        "aegl_2": 2.8,
-        "aegl_3": 50.0,
-        "erpg_1": 1.0,
-        "erpg_2": 3.0,
-        "erpg_3": 20.0,
-        "idlh": 10.0,
-        "tlv_twa": 0.5,
-        "pel_twa": 1.0,
-        "toxic_endpoint": 3.0,
-    },
-    "ammonia": {
-        "units": "ppm",
-        "aegl_1": 30.0,
-        "aegl_2": 160.0,
-        "aegl_3": 1100.0,
-        "erpg_1": 25.0,
-        "erpg_2": 150.0,
-        "erpg_3": 750.0,
-        "idlh": 300.0,
-        "tlv_twa": 25.0,
-        "pel_twa": 50.0,
-        "toxic_endpoint": 150.0,
-    },
-    "hydrogen_sulfide": {
-        "units": "ppm",
-        "aegl_1": 0.75,
-        "aegl_2": 41.0,
-        "aegl_3": 76.0,
-        "erpg_1": 0.1,
-        "erpg_2": 30.0,
-        "erpg_3": 100.0,
-        "idlh": 100.0,
-        "tlv_twa": 1.0,
-        "pel_twa": 20.0,
-        "toxic_endpoint": 30.0,
-    },
-    "sulfur_dioxide": {
-        "units": "ppm",
-        "aegl_1": 0.2,
-        "aegl_2": 0.75,
-        "aegl_3": 30.0,
-        "erpg_1": 0.3,
-        "erpg_2": 3.0,
-        "erpg_3": 15.0,
-        "idlh": 100.0,
-        "tlv_twa": 0.25,
-        "pel_twa": 5.0,
-        "toxic_endpoint": 3.0,
-    },
-}
+TOXIC_CRITERIA_REGISTRY = load_toxic_criteria_registry()["criteria"]
 
 
 def lookup_toxic_criteria(payload: dict[str, object]) -> dict[str, object]:
@@ -113,6 +61,7 @@ def lookup_toxic_criteria(payload: dict[str, object]) -> dict[str, object]:
         "available_criteria": sorted(key for key in entry if key != "units"),
         "notes": [
             "The built-in registry is a starter dataset intended for API integration and extension.",
+            "The packaged starter dataset is loaded from deepsafety/data/toxic_criteria_registry.json.",
             "Use criteria_overrides to inject organization-specific or updated toxic criteria values.",
         ],
     }

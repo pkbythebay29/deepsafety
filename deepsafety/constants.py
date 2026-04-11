@@ -1,35 +1,9 @@
 from __future__ import annotations
 
-import math
+from deepsafety.data_access import load_constants_registry
 
 
-DEFAULT_CONSTANTS: dict[str, dict[str, object]] = {
-    "shared.pi": {
-        "value": math.pi,
-        "unit": "dimensionless",
-        "description": "Circle constant used in Gaussian and radiant heat calculations.",
-    },
-    "shared.absolute_zero_offset_c": {
-        "value": 273.15,
-        "unit": "degC",
-        "description": "Offset used to convert Celsius to Kelvin.",
-    },
-    "shared.reference_temperature_c": {
-        "value": 20.0,
-        "unit": "degC",
-        "description": "Reference temperature used by the temperature-adjusted flammability relation.",
-    },
-    "fire.default_radiative_fraction": {
-        "value": 0.35,
-        "unit": "fraction",
-        "description": "Default fraction of combustion energy emitted as thermal radiation.",
-    },
-    "fire.default_atmospheric_transmissivity": {
-        "value": 1.0,
-        "unit": "fraction",
-        "description": "Default transmissivity multiplier for simple point-source heat flux calculations.",
-    },
-}
+DEFAULT_CONSTANTS: dict[str, dict[str, object]] = load_constants_registry()["constants"]
 
 
 MODEL_CONSTANTS: dict[str, tuple[str, ...]] = {
@@ -56,6 +30,10 @@ def get_constant_definition(name: str) -> dict[str, object]:
     if name not in DEFAULT_CONSTANTS:
         raise KeyError(name)
     return DEFAULT_CONSTANTS[name]
+
+
+def get_constant_value(name: str) -> float:
+    return float(get_constant_definition(name)["value"])
 
 
 def list_constants() -> dict[str, dict[str, object]]:
@@ -85,7 +63,8 @@ def resolve_constants(
             "value": numeric_value,
             "unit": definition["unit"],
             "description": definition["description"],
-            "source": "override" if name in overrides else "default",
+            "physical_meaning": definition.get("physical_meaning"),
+            "source": "override" if name in overrides else str(definition.get("source", "default")),
         }
 
     return resolved

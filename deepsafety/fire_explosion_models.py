@@ -3,8 +3,10 @@ from __future__ import annotations
 import math
 
 from deepsafety.catalog import ModelInputError
+from deepsafety.constants import get_constant_value
 
-TNT_HEAT_KJ_KG = 4_680.0
+TNT_HEAT_KJ_KG = get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
+DEFAULT_FIRE_RADIATIVE_FRACTION = get_constant_value("fire.default_radiative_fraction")
 
 
 def _require_float(payload: dict[str, object], key: str) -> float:
@@ -56,7 +58,7 @@ def _solve_jet_fire(payload: dict[str, object]) -> dict[str, object]:
     release_rate_kg_s = _positive_float(payload, "release_rate_kg_s")
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     distance_m = _positive_float(payload, "distance_m")
-    radiative_fraction = float(payload.get("radiative_fraction", 0.2))
+    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
     heat_flux_kw_m2 = (
         radiative_fraction * release_rate_kg_s * heat_of_combustion_kj_kg / (4 * math.pi * distance_m**2)
     )
@@ -72,7 +74,7 @@ def _solve_pool_fire(payload: dict[str, object]) -> dict[str, object]:
     burning_flux_kg_m2_s = _positive_float(payload, "burning_flux_kg_m2_s")
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     distance_m = _positive_float(payload, "distance_m")
-    radiative_fraction = float(payload.get("radiative_fraction", 0.35))
+    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
     burning_rate_kg_s = pool_area_m2 * burning_flux_kg_m2_s
     heat_flux_kw_m2 = (
         radiative_fraction * burning_rate_kg_s * heat_of_combustion_kj_kg / (4 * math.pi * distance_m**2)
@@ -90,7 +92,7 @@ def _solve_fireball(payload: dict[str, object]) -> dict[str, object]:
     distance_m = _positive_float(payload, "distance_m")
     diameter_m = 5.8 * fuel_mass_kg**0.325
     duration_s = 0.45 * fuel_mass_kg**0.26
-    radiative_fraction = float(payload.get("radiative_fraction", 0.35))
+    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     heat_flux_kw_m2 = (
         radiative_fraction

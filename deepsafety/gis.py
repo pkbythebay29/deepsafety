@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import math
 
+from deepsafety.constants import get_constant_value
 
-EARTH_RADIUS_M = 6_371_000.0
+
+EARTH_RADIUS_M = get_constant_value("gis.earth_radius_m")
 
 
 def haversine_distance_m(

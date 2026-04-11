@@ -19,6 +19,7 @@ class ConstantMetadata(BaseModel):
     value: float
     unit: str
     description: str
+    physical_meaning: str | None = None
     source: str = "default"
 
 

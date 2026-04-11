@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import math
+from typing import Any
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -11,17 +14,84 @@ from deepsafety.catalog import (
     list_models,
     run_model,
 )
-from deepsafety.constants import list_constants, resolve_constants
+from deepsafety.constants import get_constant_definition, get_constant_value, list_constants, resolve_constants
 from deepsafety.dispersion.neutrally_buoyant import calculate_sigma_y, calculate_sigma_z
+from deepsafety.dispersion_workflows import (
+    evaluate_release_mitigation,
+    evaluate_toxic_endpoints,
+    get_isopleth,
+    run_dense_gas,
+    run_gaussian_plume,
+    run_gaussian_puff,
+)
 from deepsafety.dispersion_service import solve_dispersion_model
 from deepsafety.effect_models import solve_effect_model
 from deepsafety.fire_explosion_models import solve_fire_explosion_model
 from deepsafety.gis import circle_polygon, haversine_distance_m, point_feature
+from deepsafety.hazard_evaluation import (
+    run_checklist,
+    run_fmea,
+    run_hazop,
+    run_inherent_safety_review,
+    run_preliminary_hazard_analysis,
+    run_relative_ranking,
+    run_safety_review,
+    run_what_if,
+    validate_information_requirements,
+)
+from deepsafety.health_models import (
+    calculate_dilution_ventilation,
+    calculate_local_exhaust,
+    calculate_twa_exposure,
+    convert_concentration,
+    estimate_pool_evaporation,
+    evaluate_exposure_compliance,
+    evaluate_probit,
+)
+from deepsafety.materials_data import (
+    get_material,
+    get_material_flammability,
+    get_material_reactivity,
+    get_material_toxicity,
+    list_materials,
+)
+from deepsafety.prevention_models import (
+    solve_area_classification,
+    solve_fire_protection_strategy,
+    solve_purging_strategy,
+    solve_static_electricity_risk,
+)
 from deepsafety.prevention_response_models import solve_prevention_response_model
+from deepsafety.reactivity_models import (
+    interpret_calorimetry,
+    recommend_reactivity_controls,
+    screen_reactivity,
+)
+from deepsafety.relief_models import (
+    analyze_relief_system,
+    select_effluent_handling,
+    select_relief_device,
+    size_deflagration_vent,
+    size_external_fire_relief,
+    size_gas_vapor_relief,
+    size_liquid_relief,
+    size_thermal_expansion_relief,
+    size_two_phase_relief,
+)
 from deepsafety.scenario_engine import build_scenario_definition
 from deepsafety.scenario_library import list_templates
 from deepsafety.sign_intelligence import analyze_sign
+from deepsafety.spec_helpers import (
+    calculate_loc,
+    calculate_multi_energy_blast,
+    calculate_tnt_equivalency,
+    evaluate_bleve,
+    evaluate_flammability_mixture,
+    evaluate_ignition_energy,
+    evaluate_vce,
+)
 from deepsafety.source_models import solve_source_model
+from deepsafety.source_workflows import apply_conservative_analysis, select_release_scenario
 from deepsafety.toxic_criteria import lookup_toxic_criteria
 from deepsafety.schemas import (
     CalculationRequest,
@@ -59,6 +129,20 @@ DEFAULT_IMPACT_MODELS = {
     "leak": "dispersion.gaussian_puff_screening_radius",
     "fire": "fire.point_source_heat_flux_radius",
 }
+
+
+def _constant_entry(name: str) -> dict[str, object]:
+    definition = get_constant_definition(name)
+    return {
+        "name": name,
+        "value": float(definition["value"]),
+        "unit": str(definition["unit"]),
+        "description": str(definition["description"]),
+        "physical_meaning": str(definition["physical_meaning"]) if definition.get("physical_meaning") else None,
+        "source": str(definition.get("source", "default")),
+    }
+
+
 SOURCE_MODEL_METADATA = {
     "gas_release": {
         "equations": [
@@ -70,20 +154,8 @@ SOURCE_MODEL_METADATA = {
             "Pipe and hole releases share the same orifice-style discharge core with user-supplied geometry.",
         ],
         "constants": [
-            {
-                "name": "shared.gravity_standard",
-                "value": 9.80665,
-                "unit": "m/s^2",
-                "description": "Standard gravity used in liquid and discharge relations.",
-                "source": "default",
-            },
-            {
-                "name": "shared.universal_gas_constant",
-                "value": 8.314462618,
-                "unit": "J/mol/K",
-                "description": "Universal gas constant used to derive gas-specific constants.",
-                "source": "default",
-            },
+            _constant_entry("shared.gravity_standard"),
+            _constant_entry("shared.universal_gas_constant"),
         ],
         "references": [
             {
@@ -101,13 +173,7 @@ SOURCE_MODEL_METADATA = {
             "Incompressible liquid screening model.",
         ],
         "constants": [
-            {
-                "name": "shared.gravity_standard",
-                "value": 9.80665,
-                "unit": "m/s^2",
-                "description": "Standard gravity used in gravity-driven discharge.",
-                "source": "default",
-            }
+            _constant_entry("shared.gravity_standard")
         ],
         "references": [
             {
@@ -462,6 +528,7 @@ def _to_constant_metadata(
             value=float(definition["value"]),
             unit=str(definition["unit"]),
             description=str(definition["description"]),
+            physical_meaning=str(definition["physical_meaning"]) if definition.get("physical_meaning") else None,
             source=str(definition.get("source", "default")),
         )
         for name, definition in constants.items()
@@ -666,7 +733,7 @@ def _build_impact_inputs(
                     "downstream_pressure_pa": asset.get("downstream_pressure_pa", 101_325.0),
                     "temperature_k": asset.get(
                         "temperature_k",
-                        float(asset.get("gas_temperature_c", 15.0)) + 273.15,
+                        float(asset.get("gas_temperature_c", 15.0)) + get_constant_value("shared.absolute_zero_offset_c"),
                     ),
                     "heat_capacity_ratio": asset.get("heat_capacity_ratio", 1.3),
                     "molecular_weight_kg_kmol": asset.get("molecular_weight_kg_kmol", 28.97),
@@ -713,7 +780,7 @@ def _build_impact_inputs(
 def create_app() -> FastAPI:
     app = FastAPI(
         title="DeepSafety Consequence Analysis API",
-        version="0.1.0",
+        version="1.0.0",
         summary="Integration-ready process safety consequence calculations.",
         description=(
             "Expose process-safety consequence models through a stable REST API. "
@@ -735,17 +802,27 @@ def create_app() -> FastAPI:
     def root() -> dict[str, object]:
         return {
             "service": "DeepSafety Consequence Analysis API",
-            "version": "0.1.0",
+            "version": "1.0.0",
             "docs": "/docs",
+            "openapi": "/openapi.json",
             "models_endpoint": "/models",
+            "materials_endpoint": "/materials",
+            "health_endpoint": "/health/convert-concentration",
             "scenario_definition_endpoint": "/scenario-engine/define",
             "scenario_library_endpoint": "/scenario-library/templates",
             "source_endpoint": "/source-models/solve",
+            "source_scenario_select_endpoint": "/source-models/scenario/select",
             "dispersion_endpoint": "/dispersion-models/solve",
+            "dispersion_plume_endpoint": "/dispersion/gaussian-plume",
             "fire_explosion_endpoint": "/fire-explosion-models/solve",
+            "fire_explosion_vce_endpoint": "/fire-explosion/vce",
             "effects_endpoint": "/effect-models/solve",
             "toxic_criteria_endpoint": "/toxic-criteria/lookup",
             "prevention_response_endpoint": "/prevention-response-models/solve",
+            "prevention_endpoint": "/prevention/inerting/purge",
+            "reactivity_endpoint": "/reactivity/screening",
+            "relief_endpoint": "/relief/system/analyze",
+            "hazard_evaluation_endpoint": "/hazard-evaluation/hazop",
             "visualization_endpoint": "/visualization/solve",
             "sign_analysis_endpoint": "/signs/analyze",
             "gis_endpoint": "/gis/scenarios/evaluate",
@@ -814,6 +891,91 @@ def create_app() -> FastAPI:
     @app.get("/scenario-library/templates", response_model=list[TemplateSummary])
     def get_scenario_templates() -> list[TemplateSummary]:
         return [TemplateSummary(**template) for template in list_templates()]
+
+    @app.get("/materials")
+    def materials_endpoint(
+        q: str | None = Query(default=None),
+        page: int = Query(default=1, ge=1),
+        pageSize: int = Query(default=20, ge=1, le=100),
+    ) -> dict[str, object]:
+        return list_materials(query=q, page=page, page_size=pageSize)
+
+    @app.get("/materials/{material_id}")
+    def material_endpoint(material_id: str) -> dict[str, object]:
+        try:
+            return get_material(material_id)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/materials/{material_id}/toxicity")
+    def material_toxicity_endpoint(material_id: str) -> dict[str, object]:
+        try:
+            return get_material_toxicity(material_id)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/materials/{material_id}/flammability")
+    def material_flammability_endpoint(material_id: str) -> dict[str, object]:
+        try:
+            return get_material_flammability(material_id)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/materials/{material_id}/reactivity")
+    def material_reactivity_endpoint(material_id: str) -> dict[str, object]:
+        try:
+            return get_material_reactivity(material_id)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/health/convert-concentration")
+    def convert_concentration_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return convert_concentration(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/health/probit/evaluate")
+    def evaluate_probit_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_probit(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/health/exposure/twa")
+    def calculate_twa_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_twa_exposure(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/health/exposure/compliance")
+    def evaluate_exposure_compliance_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_exposure_compliance(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/industrial-hygiene/ventilation/dilution")
+    def dilution_ventilation_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_dilution_ventilation(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/industrial-hygiene/ventilation/local-exhaust")
+    def local_exhaust_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_local_exhaust(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/industrial-hygiene/liquid-pool/evaporation")
+    def pool_evaporation_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return estimate_pool_evaporation(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/service-catalog")
     def get_service_catalog() -> dict[str, list[ServiceMetadata]]:
@@ -899,7 +1061,535 @@ def create_app() -> FastAPI:
                 )
                 for model_type, details in SIGN_INTELLIGENCE_METADATA.items()
             ],
+            "materials": [
+                ServiceMetadata(
+                    service_name="materials",
+                    model_type="material_record",
+                    equations=[],
+                    assumptions=[
+                        "Material records are foundational inputs for source, dispersion, flammability, toxicity, reactivity, and hazard-study workflows."
+                    ],
+                    constants=[],
+                    references=[
+                        ReferenceMetadata(
+                            title="Material data foundation",
+                            notes="Chemical properties, flammability, toxicity, reactivity, equipment, procedures, and operating conditions are all upstream requirements for meaningful hazard evaluation.",
+                        )
+                    ],
+                )
+            ],
+            "health": [
+                ServiceMetadata(
+                    service_name="health",
+                    model_type="convert_concentration",
+                    equations=["ppm <-> mg/m3 via ideal-gas concentration relation"],
+                    assumptions=["Ideal-gas conversion at user-supplied temperature and pressure."],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Concentration unit conversion")],
+                ),
+                ServiceMetadata(
+                    service_name="health",
+                    model_type="probit_evaluation",
+                    equations=["Y = k1 + k2 * ln(V)"],
+                    assumptions=["Probability is obtained from a probit-to-normal transform."],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Generic probit evaluation")],
+                ),
+            ],
+            "prevention": [
+                ServiceMetadata(
+                    service_name="prevention",
+                    model_type="purging_strategy",
+                    equations=["Purge gas requirement scales with vessel volume, purge cycles, and gas purity."],
+                    assumptions=["Purging endpoints are screening tools for inerting and oxygen reduction studies."],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Purging and inerting screening")],
+                )
+            ],
+            "reactivity": [
+                ServiceMetadata(
+                    service_name="reactivity",
+                    model_type="screening",
+                    equations=["Qualitative compatibility and temperature-driven reactivity review."],
+                    assumptions=["Starter reactivity screening uses incompatibility lists plus process-condition flags."],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Reactive hazard screening")],
+                )
+            ],
+            "relief": [
+                ServiceMetadata(
+                    service_name="relief",
+                    model_type="device_selection_and_sizing",
+                    equations=[
+                        "Liquid and gas relief sizing use screening area-capacity relations.",
+                        "Deflagration vent sizing scales with enclosure volume and explosion severity factor.",
+                    ],
+                    assumptions=["Relief-system endpoints are screening-grade, not code-stamped final design calculations."],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Relief system screening and sizing")],
+                )
+            ],
+            "hazard_evaluation": [
+                ServiceMetadata(
+                    service_name="hazard_evaluation",
+                    model_type="hazop_fmea_what_if",
+                    equations=[],
+                    assumptions=[
+                        "Scenario outputs from source and dispersion services are intended to feed structured hazard-study workflows."
+                    ],
+                    constants=[],
+                    references=[ReferenceMetadata(title="Scenario-based hazard evaluation workflows")],
+                )
+            ],
         }
+
+    @app.post("/source-models/liquid-hole")
+    def source_liquid_hole_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            result = solve_source_model(
+                "liquid_release",
+                {
+                    "source_subtype": "pipe_flow",
+                    "density_kg_m3": payload["liquidDensity"],
+                    "delta_pressure_pa": max(float(payload["upstreamPressure"]) - float(payload["downstreamPressure"]), 1.0),
+                    "hole_area_m2": payload["holeArea"],
+                    "duration_s": 1.0,
+                    "inventory_mass_kg": 1e12,
+                    "discharge_coefficient": payload.get("dischargeCoefficient", 0.62),
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"releaseRate": result["release_rate_kg_s"], "unit": "kg/s"}
+
+    @app.post("/source-models/tank-hole")
+    def source_tank_hole_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            density = float(payload["liquidDensity"])
+            liquid_head = float(payload["liquidHead"])
+            hole_area = float(payload["holeArea"])
+            tank_cross_section_area = float(payload.get("tankCrossSectionArea", 1.0))
+            result = solve_source_model(
+                "liquid_release",
+                {
+                    "source_subtype": "hole_in_tank",
+                    "density_kg_m3": density,
+                    "hole_area_m2": hole_area,
+                    "liquid_head_m": liquid_head,
+                    "duration_s": 1.0,
+                    "inventory_mass_kg": 1e12,
+                    "discharge_coefficient": payload.get("dischargeCoefficient", 0.62),
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        initial_release_rate = float(result["release_rate_kg_s"])
+        inventory_mass = density * tank_cross_section_area * liquid_head
+        emptying_time = inventory_mass / max(initial_release_rate, 1e-9)
+        profile = []
+        for fraction in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            remaining_head = max(liquid_head * (1.0 - fraction), 0.0)
+            release_rate = initial_release_rate * (remaining_head / liquid_head) ** 0.5 if liquid_head > 0 else 0.0
+            profile.append({"time": round(emptying_time * fraction, 6), "releaseRate": round(release_rate, 6)})
+        return {
+            "initialReleaseRate": round(initial_release_rate, 6),
+            "emptyingTime": round(emptying_time, 6),
+            "releaseRateProfile": profile,
+        }
+
+    @app.post("/source-models/liquid-pipe")
+    def source_liquid_pipe_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            density = float(payload["density"])
+            diameter = float(payload["pipeDiameter"])
+            viscosity = float(payload["viscosity"])
+            roughness = float(payload["roughness"])
+            result = solve_source_model(
+                "liquid_release",
+                {
+                    "source_subtype": "pipe_flow",
+                    "density_kg_m3": density,
+                    "delta_pressure_pa": payload["pressureDrop"],
+                    "pipe_diameter_m": diameter,
+                    "pipe_length_m": payload["pipeLength"],
+                    "pipe_area_m2": 3.141592653589793 * diameter**2 / 4.0,
+                    "relative_roughness": roughness / max(diameter, 1e-9),
+                    "duration_s": 1.0,
+                    "inventory_mass_kg": 1e12,
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        velocity = float(result["exit_velocity_m_s"])
+        reynolds = density * velocity * diameter / max(viscosity, 1e-12)
+        if reynolds <= 2_000:
+            friction_factor = 64.0 / max(reynolds, 1.0)
+        else:
+            friction_factor = 0.25 / (
+                math.log10((roughness / max(diameter, 1e-9)) / 3.7 + 5.74 / reynolds**0.9) ** 2
+            )
+        return {
+            "velocity": round(velocity, 6),
+            "massFlowRate": result["release_rate_kg_s"],
+            "reynoldsNumber": round(reynolds, 6),
+            "frictionFactor": round(friction_factor, 6),
+        }
+
+    @app.post("/source-models/gas-hole")
+    def source_gas_hole_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            result = solve_source_model(
+                "gas_release",
+                {
+                    "source_subtype": "hole",
+                    "upstream_pressure_pa": payload["upstreamPressure"],
+                    "downstream_pressure_pa": payload["downstreamPressure"],
+                    "temperature_k": payload["temperatureK"],
+                    "molecular_weight_kg_kmol": payload["molecularWeight"],
+                    "heat_capacity_ratio": payload["heatCapacityRatio"],
+                    "hole_area_m2": payload["holeArea"],
+                    "discharge_coefficient": payload.get("dischargeCoefficient", 0.62),
+                    "duration_s": 1.0,
+                    "inventory_mass_kg": 1e12,
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        gas_constant = get_constant_value("shared.universal_gas_constant") / (float(payload["molecularWeight"]) / 1000.0)
+        sonic_velocity = (float(payload["heatCapacityRatio"]) * gas_constant * float(payload["temperatureK"])) ** 0.5
+        return {
+            "choked": result["submodel"] == "choked_flow",
+            "massFlowRate": result["release_rate_kg_s"],
+            "sonicVelocity": round(sonic_velocity, 6),
+        }
+
+    @app.post("/source-models/gas-pipe")
+    def source_gas_pipe_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            diameter = float(payload["pipeDiameter"])
+            result = solve_source_model(
+                "gas_release",
+                {
+                    "source_subtype": "pipe",
+                    "pipe_diameter_m": diameter,
+                    "pipe_area_m2": 3.141592653589793 * diameter**2 / 4.0,
+                    "pipe_length_m": payload["pipeLength"],
+                    "relative_roughness": float(payload["roughness"]) / max(diameter, 1e-9),
+                    "upstream_pressure_pa": payload["upstreamPressure"],
+                    "downstream_pressure_pa": payload["downstreamPressure"],
+                    "temperature_k": payload["temperatureK"],
+                    "molecular_weight_kg_kmol": payload["molecularWeight"],
+                    "heat_capacity_ratio": payload.get("heatCapacityRatio", 1.3),
+                    "duration_s": 1.0,
+                    "inventory_mass_kg": 1e12,
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        gas_constant = get_constant_value("shared.universal_gas_constant") / (float(payload["molecularWeight"]) / 1000.0)
+        sonic_velocity = (float(payload.get("heatCapacityRatio", 1.3)) * gas_constant * float(payload["temperatureK"])) ** 0.5
+        return {
+            "choked": result["submodel"] == "choked_flow",
+            "massFlowRate": result["release_rate_kg_s"],
+            "sonicVelocity": round(sonic_velocity, 6),
+        }
+
+    @app.post("/source-models/flashing-liquid")
+    def source_flashing_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            material = get_material(str(payload["materialId"]))
+            boiling_point_k = float(material.get("boilingPoint") or payload["initialTemperatureK"])
+            total_mass = float(payload.get("inventoryMass", 1.0))
+            result = solve_source_model(
+                "flashing",
+                {
+                    "cp_liquid_j_kg_k": payload.get("cpLiquid", 2500.0),
+                    "storage_temperature_k": payload["initialTemperatureK"],
+                    "boiling_point_k": boiling_point_k,
+                    "latent_heat_j_kg": payload.get("latentHeat", 300_000.0),
+                    "total_mass_kg": total_mass,
+                    "entrainment_fraction": payload.get("entrainmentFraction", 0.1),
+                },
+            )
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "vaporFraction": result["flash_fraction"],
+            "liquidFraction": round(1.0 - float(result["flash_fraction"]), 6),
+            "flashedMass": result["vapor_mass_kg"],
+            "rainoutMass": result["rainout_mass_kg"],
+        }
+
+    @app.post("/source-models/scenario/select")
+    def source_scenario_select_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return select_release_scenario(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/source-models/conservative-analysis")
+    def source_conservative_analysis_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return apply_conservative_analysis(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/gaussian-plume")
+    def gaussian_plume_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return run_gaussian_plume(payload)
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/gaussian-puff")
+    def gaussian_puff_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return run_gaussian_puff(payload)
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/dense-gas")
+    def dense_gas_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        request = dict(payload)
+        try:
+            if request.get("materialId") and request.get("gasDensityKgM3") is None:
+                material = get_material(str(request["materialId"]))
+                if material.get("density") is not None:
+                    request["gasDensityKgM3"] = material["density"]
+            return run_dense_gas(request)
+        except (KeyError, ModelInputError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/isopleth")
+    def isopleth_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return get_isopleth(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/toxic-endpoints/evaluate")
+    def toxic_endpoints_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_toxic_endpoints(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/dispersion/prevention-mitigation")
+    def dispersion_mitigation_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            scenario = dict(payload.get("scenario", {}))
+            measures = [str(item) for item in payload.get("measures", [])]
+            mitigation_factor = float(payload.get("mitigationFactor", min(0.8, 0.15 * len(measures))))
+            return evaluate_release_mitigation(
+                {
+                    "releaseRate": scenario.get("releaseRate", scenario.get("release_rate", 1.0)),
+                    "windSpeed": scenario.get("windSpeed", scenario.get("wind_speed", 3.0)),
+                    "mitigationFactor": mitigation_factor,
+                }
+            )
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/flammability/mixture")
+    def flammability_mixture_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_flammability_mixture(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/loc")
+    def loc_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_loc(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/ignition-energy")
+    def ignition_energy_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_ignition_energy(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/tnt-equivalency")
+    def tnt_equivalency_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_tnt_equivalency(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/multi-energy")
+    def multi_energy_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return calculate_multi_energy_blast(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/vce")
+    def vce_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_vce(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/fire-explosion/bleve")
+    def bleve_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return evaluate_bleve(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/prevention/inerting/purge")
+    def inerting_purge_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return solve_purging_strategy(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/prevention/static-electricity/risk")
+    def static_electricity_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return solve_static_electricity_risk(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/prevention/area-classification")
+    def area_classification_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return solve_area_classification(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/prevention/fire-protection/strategy")
+    def fire_protection_strategy_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return solve_fire_protection_strategy(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/reactivity/calorimetry/interpret")
+    def calorimetry_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return interpret_calorimetry(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/reactivity/screening")
+    def reactivity_screening_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return screen_reactivity(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/reactivity/control")
+    def reactivity_control_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return recommend_reactivity_controls(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/devices/select")
+    def relief_device_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return select_relief_device(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/system/analyze")
+    def relief_system_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return analyze_relief_system(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/effluent-handling/select")
+    def effluent_handling_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return select_effluent_handling(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/liquid")
+    def relief_sizing_liquid_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_liquid_relief(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/gas-vapor")
+    def relief_sizing_gas_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_gas_vapor_relief(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/two-phase")
+    def relief_sizing_two_phase_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_two_phase_relief(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/deflagration-vent")
+    def relief_sizing_deflagration_vent_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_deflagration_vent(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/external-fire")
+    def relief_sizing_external_fire_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_external_fire_relief(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/relief/sizing/thermal-expansion")
+    def relief_sizing_thermal_expansion_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return size_thermal_expansion_relief(payload)
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/hazard-evaluation/checklist")
+    def hazard_checklist_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_checklist(payload)
+
+    @app.post("/hazard-evaluation/safety-review")
+    def hazard_safety_review_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_safety_review(payload)
+
+    @app.post("/hazard-evaluation/inherent-safety-review")
+    def hazard_inherent_safety_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_inherent_safety_review(payload)
+
+    @app.post("/hazard-evaluation/preliminary-hazard-analysis")
+    def hazard_preliminary_analysis_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_preliminary_hazard_analysis(payload)
+
+    @app.post("/hazard-evaluation/relative-ranking")
+    def hazard_relative_ranking_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_relative_ranking(payload)
+
+    @app.post("/hazard-evaluation/hazop")
+    def hazard_hazop_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_hazop(payload)
+
+    @app.post("/hazard-evaluation/fmea")
+    def hazard_fmea_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_fmea(payload)
+
+    @app.post("/hazard-evaluation/what-if")
+    def hazard_what_if_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_what_if(payload)
+
+    @app.post("/hazard-evaluation/what-if-checklist")
+    def hazard_what_if_checklist_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_what_if(payload, checklist_items=[str(item) for item in payload.get("checklistItems", [])])
+
+    @app.post("/hazard-evaluation/information-requirements/validate")
+    def hazard_information_requirements_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+        return validate_information_requirements(payload)
 
     @app.post("/source-models/solve", response_model=ServiceResponse)
     def solve_source(request: ServiceRequest) -> ServiceResponse:

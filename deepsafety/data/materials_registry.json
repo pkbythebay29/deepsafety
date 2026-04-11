@@ -1,0 +1,249 @@
+{
+  "_meta": {
+    "registry_name": "deepsafety_materials_registry",
+    "description": "Starter material registry used by Deep Safety for process-safety screening workflows.",
+    "provenance": [
+      {
+        "source": "starter_registry",
+        "notes": "Values are packaged as a starter dataset for integration, testing, and extension. They should be validated and replaced with organization-approved property packages where required."
+      },
+      {
+        "source": "reported_limits",
+        "notes": "Exposure-limit labels and basis fields identify the reported source family such as ACGIH, OSHA, NIOSH, or starter registry."
+      }
+    ]
+  },
+  "materials": [
+    {
+      "id": "chlorine",
+      "name": "Chlorine",
+      "casNumber": "7782-50-5",
+      "molecularWeight": 70.906,
+      "density": 3.214,
+      "vaporPressure": 587.0,
+      "boilingPoint": 239.11,
+      "flashPoint": null,
+      "autoignitionTemperature": null,
+      "lfl": null,
+      "ufl": null,
+      "sourceNotes": {
+        "molecularWeight": "starter_registry",
+        "density": "starter_registry",
+        "vaporPressure": "starter_registry",
+        "boilingPoint": "starter_registry"
+      },
+      "tlvTwa": { "value": 0.5, "unit": "ppm", "basis": "ACGIH TWA" },
+      "tlvStel": { "value": 1.0, "unit": "ppm", "basis": "ACGIH STEL" },
+      "tlvCeiling": null,
+      "pel": { "value": 1.0, "unit": "ppm", "basis": "OSHA PEL" },
+      "idlh": { "value": 10.0, "unit": "ppm", "basis": "NIOSH IDLH" },
+      "toxicity": {
+        "routesOfExposure": ["inhalation", "dermal"],
+        "acuteToxicity": { "warning": "severe respiratory irritant" },
+        "chronicToxicity": { "warning": "repeat exposure can damage lungs" },
+        "exposureLimits": {
+          "aegl_1": { "value": 0.5, "unit": "ppm", "basis": "starter registry" },
+          "aegl_2": { "value": 2.8, "unit": "ppm", "basis": "starter registry" },
+          "aegl_3": { "value": 50.0, "unit": "ppm", "basis": "starter registry" },
+          "erpg_2": { "value": 3.0, "unit": "ppm", "basis": "starter registry" },
+          "idlh": { "value": 10.0, "unit": "ppm", "basis": "starter registry" }
+        },
+        "probitModels": [
+          {
+            "k1": -14.3,
+            "k2": 2.3,
+            "causativeVariable": "C^n * t",
+            "notes": "Starter toxic inhalation probit coefficients."
+          }
+        ]
+      },
+      "flammability": {
+        "lfl": null,
+        "ufl": null,
+        "loc": null,
+        "flashPoint": null,
+        "autoignitionTemperature": null,
+        "minimumIgnitionEnergy": null,
+        "pmax": null,
+        "dpdtMax": null
+      },
+      "reactivity": {
+        "incompatibilities": ["ammonia", "hydrocarbons", "strong reducing agents"],
+        "calorimetryAvailable": false,
+        "maxPressure": null,
+        "maxReactionRate": null,
+        "timeToMaxRate": null,
+        "energyRelease": null
+      }
+    },
+    {
+      "id": "ammonia",
+      "name": "Ammonia",
+      "casNumber": "7664-41-7",
+      "molecularWeight": 17.031,
+      "density": 0.73,
+      "vaporPressure": 857.0,
+      "boilingPoint": 239.82,
+      "flashPoint": null,
+      "autoignitionTemperature": 651.0,
+      "lfl": 15.0,
+      "ufl": 28.0,
+      "sourceNotes": {
+        "molecularWeight": "starter_registry",
+        "density": "starter_registry",
+        "vaporPressure": "starter_registry",
+        "boilingPoint": "starter_registry",
+        "autoignitionTemperature": "starter_registry",
+        "lfl": "starter_registry",
+        "ufl": "starter_registry"
+      },
+      "tlvTwa": { "value": 25.0, "unit": "ppm", "basis": "ACGIH TWA" },
+      "tlvStel": { "value": 35.0, "unit": "ppm", "basis": "ACGIH STEL" },
+      "tlvCeiling": null,
+      "pel": { "value": 50.0, "unit": "ppm", "basis": "OSHA PEL" },
+      "idlh": { "value": 300.0, "unit": "ppm", "basis": "NIOSH IDLH" },
+      "toxicity": {
+        "routesOfExposure": ["inhalation", "dermal"],
+        "acuteToxicity": { "warning": "corrosive inhalation irritant" },
+        "chronicToxicity": { "warning": "repeat exposure can irritate eyes and respiratory system" },
+        "exposureLimits": {
+          "aegl_1": { "value": 30.0, "unit": "ppm", "basis": "starter registry" },
+          "aegl_2": { "value": 160.0, "unit": "ppm", "basis": "starter registry" },
+          "erpg_2": { "value": 150.0, "unit": "ppm", "basis": "starter registry" },
+          "idlh": { "value": 300.0, "unit": "ppm", "basis": "starter registry" }
+        },
+        "probitModels": [
+          {
+            "k1": -15.6,
+            "k2": 2.1,
+            "causativeVariable": "C^n * t",
+            "notes": "Starter toxic inhalation probit coefficients."
+          }
+        ]
+      },
+      "flammability": {
+        "lfl": 15.0,
+        "ufl": 28.0,
+        "loc": 14.0,
+        "flashPoint": null,
+        "autoignitionTemperature": 651.0,
+        "minimumIgnitionEnergy": 8.0,
+        "pmax": 8.0,
+        "dpdtMax": 350.0
+      },
+      "reactivity": {
+        "incompatibilities": ["chlorine", "mercury", "strong acids"],
+        "calorimetryAvailable": false,
+        "maxPressure": null,
+        "maxReactionRate": null,
+        "timeToMaxRate": null,
+        "energyRelease": null
+      }
+    },
+    {
+      "id": "methane",
+      "name": "Methane",
+      "casNumber": "74-82-8",
+      "molecularWeight": 16.043,
+      "density": 0.656,
+      "vaporPressure": null,
+      "boilingPoint": 111.66,
+      "flashPoint": 188.0,
+      "autoignitionTemperature": 537.0,
+      "lfl": 5.0,
+      "ufl": 15.0,
+      "sourceNotes": {
+        "molecularWeight": "starter_registry",
+        "density": "starter_registry",
+        "boilingPoint": "starter_registry",
+        "flashPoint": "starter_registry",
+        "autoignitionTemperature": "starter_registry",
+        "lfl": "starter_registry",
+        "ufl": "starter_registry"
+      },
+      "tlvTwa": null,
+      "tlvStel": null,
+      "tlvCeiling": null,
+      "pel": null,
+      "idlh": null,
+      "toxicity": {
+        "routesOfExposure": ["inhalation"],
+        "acuteToxicity": { "warning": "simple asphyxiant" },
+        "chronicToxicity": { "warning": "not classified as chronic systemic toxicant in starter dataset" },
+        "exposureLimits": {},
+        "probitModels": []
+      },
+      "flammability": {
+        "lfl": 5.0,
+        "ufl": 15.0,
+        "loc": 12.0,
+        "flashPoint": 188.0,
+        "autoignitionTemperature": 537.0,
+        "minimumIgnitionEnergy": 0.28,
+        "pmax": 8.2,
+        "dpdtMax": 230.0
+      },
+      "reactivity": {
+        "incompatibilities": ["strong oxidizers"],
+        "calorimetryAvailable": false,
+        "maxPressure": null,
+        "maxReactionRate": null,
+        "timeToMaxRate": null,
+        "energyRelease": null
+      }
+    },
+    {
+      "id": "propane",
+      "name": "Propane",
+      "casNumber": "74-98-6",
+      "molecularWeight": 44.097,
+      "density": 1.867,
+      "vaporPressure": 858.0,
+      "boilingPoint": 231.11,
+      "flashPoint": 169.0,
+      "autoignitionTemperature": 470.0,
+      "lfl": 2.1,
+      "ufl": 9.5,
+      "sourceNotes": {
+        "molecularWeight": "starter_registry",
+        "density": "starter_registry",
+        "vaporPressure": "starter_registry",
+        "boilingPoint": "starter_registry",
+        "flashPoint": "starter_registry",
+        "autoignitionTemperature": "starter_registry",
+        "lfl": "starter_registry",
+        "ufl": "starter_registry"
+      },
+      "tlvTwa": null,
+      "tlvStel": null,
+      "tlvCeiling": null,
+      "pel": null,
+      "idlh": null,
+      "toxicity": {
+        "routesOfExposure": ["inhalation"],
+        "acuteToxicity": { "warning": "simple asphyxiant" },
+        "chronicToxicity": { "warning": "not classified as chronic systemic toxicant in starter dataset" },
+        "exposureLimits": {},
+        "probitModels": []
+      },
+      "flammability": {
+        "lfl": 2.1,
+        "ufl": 9.5,
+        "loc": 11.5,
+        "flashPoint": 169.0,
+        "autoignitionTemperature": 470.0,
+        "minimumIgnitionEnergy": 0.25,
+        "pmax": 8.4,
+        "dpdtMax": 450.0
+      },
+      "reactivity": {
+        "incompatibilities": ["strong oxidizers"],
+        "calorimetryAvailable": false,
+        "maxPressure": null,
+        "maxReactionRate": null,
+        "timeToMaxRate": null,
+        "energyRelease": null
+      }
+    }
+  ]
+}

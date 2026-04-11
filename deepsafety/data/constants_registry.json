@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "registry_name": "deepsafety_constants_registry",
+    "description": "Named constants used by Deep Safety screening models.",
+    "provenance": [
+      {
+        "source": "mathematical_identity",
+        "notes": "Dimensionless mathematical constants such as pi."
+      },
+      {
+        "source": "thermophysical_reference",
+        "notes": "Physical constants used across source-term, health, fire, and relief calculations."
+      },
+      {
+        "source": "screening_default",
+        "notes": "Engineering screening defaults used where the user does not provide a case-specific value."
+      }
+    ]
+  },
+  "constants": {
+    "shared.pi": {
+      "value": 3.141592653589793,
+      "unit": "dimensionless",
+      "description": "Pi, the ratio of a circle's circumference to its diameter.",
+      "physical_meaning": "Geometric constant used in plume normalization, circular areas, and point-source radiation geometry.",
+      "source": "mathematical_identity"
+    },
+    "shared.gravity_standard": {
+      "value": 9.80665,
+      "unit": "m/s^2",
+      "description": "Standard gravitational acceleration.",
+      "physical_meaning": "Acceleration due to gravity used in hydrostatic and gravity-driven liquid discharge relations.",
+      "source": "thermophysical_reference"
+    },
+    "shared.universal_gas_constant": {
+      "value": 8.314462618,
+      "unit": "J/mol/K",
+      "description": "Universal gas constant.",
+      "physical_meaning": "Links pressure, molar volume, and absolute temperature for gases.",
+      "source": "thermophysical_reference"
+    },
+    "shared.universal_gas_constant_atm_m3": {
+      "value": 8.205736e-05,
+      "unit": "m3*atm/mol/K",
+      "description": "Universal gas constant expressed in atmosphere-cubic-meter units.",
+      "physical_meaning": "Used in ppm-to-mg/m3 and mg/m3-to-ppm ideal-gas concentration conversions.",
+      "source": "thermophysical_reference"
+    },
+    "shared.absolute_zero_offset_c": {
+      "value": 273.15,
+      "unit": "degC",
+      "description": "Celsius-to-Kelvin offset.",
+      "physical_meaning": "Offset required when converting Celsius temperatures into absolute temperature.",
+      "source": "thermophysical_reference"
+    },
+    "shared.reference_temperature_c": {
+      "value": 20.0,
+      "unit": "degC",
+      "description": "Reference temperature for flammability-limit adjustment.",
+      "physical_meaning": "Reference state for the temperature-adjusted flammability-limit screening relation.",
+      "source": "screening_default"
+    },
+    "shared.tnt_heat_of_explosion_kj_kg": {
+      "value": 4680.0,
+      "unit": "kJ/kg",
+      "description": "Reference specific explosive energy of TNT used in equivalency calculations.",
+      "physical_meaning": "Converts chemical energy release into TNT-equivalent mass for blast screening.",
+      "source": "screening_default"
+    },
+    "fire.default_radiative_fraction": {
+      "value": 0.35,
+      "unit": "fraction",
+      "description": "Default radiative fraction used in fire heat-flux screening.",
+      "physical_meaning": "Fraction of total combustion energy assumed to leave the flame as radiation.",
+      "source": "screening_default"
+    },
+    "fire.default_atmospheric_transmissivity": {
+      "value": 1.0,
+      "unit": "fraction",
+      "description": "Default atmospheric transmissivity for point-source fire screening.",
+      "physical_meaning": "Fraction of radiative heat assumed to reach the receptor after atmospheric attenuation.",
+      "source": "screening_default"
+    },
+    "gis.earth_radius_m": {
+      "value": 6371000.0,
+      "unit": "m",
+      "description": "Mean Earth radius used in spherical-distance calculations.",
+      "physical_meaning": "Converts latitude/longitude differences into surface distance for GIS calculations.",
+      "source": "thermophysical_reference"
+    }
+  }
+}

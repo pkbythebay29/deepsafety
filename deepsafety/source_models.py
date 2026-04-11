@@ -3,9 +3,14 @@ from __future__ import annotations
 import math
 
 from deepsafety.catalog import ModelInputError
+from deepsafety.constants import get_constant_value
 
-GRAVITY = 9.80665
-UNIVERSAL_GAS_CONSTANT = 8.314462618
+GRAVITY = get_constant_value("shared.gravity_standard")
+UNIVERSAL_GAS_CONSTANT = get_constant_value("shared.universal_gas_constant")
+DEFAULT_DISCHARGE_COEFFICIENT = 0.62
+DEFAULT_GAS_COMPRESSIBILITY = 1.0
+DEFAULT_REYNOLDS_NUMBER = 100_000.0
+DEFAULT_RELATIVE_ROUGHNESS = 0.00015
 
 
 def _require_float(payload: dict[str, object], key: str) -> float:
@@ -88,8 +93,8 @@ def solve_source_model(model_type: str, payload: dict[str, object]) -> dict[str,
 
 
 def _pipe_friction_factor(payload: dict[str, object]) -> float:
-    reynolds_number = _optional_float(payload, "reynolds_number", 100_000.0)
-    relative_roughness = _optional_float(payload, "relative_roughness", 0.00015)
+    reynolds_number = _optional_float(payload, "reynolds_number", DEFAULT_REYNOLDS_NUMBER)
+    relative_roughness = _optional_float(payload, "relative_roughness", DEFAULT_RELATIVE_ROUGHNESS)
     if reynolds_number <= 2000:
         return 64.0 / reynolds_number
     return 0.25 / (
@@ -105,8 +110,8 @@ def _solve_gas_release(payload: dict[str, object], conservative_mode: bool) -> d
     temperature_k = _positive_float(payload, "temperature_k")
     heat_capacity_ratio = _positive_float(payload, "heat_capacity_ratio")
     molecular_weight_kg_kmol = _positive_float(payload, "molecular_weight_kg_kmol")
-    discharge_coefficient = _optional_float(payload, "discharge_coefficient", 0.62)
-    compressibility = _optional_float(payload, "compressibility", 1.0)
+    discharge_coefficient = _optional_float(payload, "discharge_coefficient", DEFAULT_DISCHARGE_COEFFICIENT)
+    compressibility = _optional_float(payload, "compressibility", DEFAULT_GAS_COMPRESSIBILITY)
     specific_gas_constant = _specific_gas_constant(molecular_weight_kg_kmol)
 
     if subtype in {"pipe", "pipeline", "pipe_rupture"}:
@@ -203,7 +208,7 @@ def _solve_gas_release(payload: dict[str, object], conservative_mode: bool) -> d
 def _solve_liquid_release(payload: dict[str, object], conservative_mode: bool) -> dict[str, object]:
     subtype = str(payload.get("source_subtype", "hole_in_tank")).lower()
     density_kg_m3 = _positive_float(payload, "density_kg_m3")
-    discharge_coefficient = _optional_float(payload, "discharge_coefficient", 0.62)
+    discharge_coefficient = _optional_float(payload, "discharge_coefficient", DEFAULT_DISCHARGE_COEFFICIENT)
     duration_s = _positive_float(payload, "duration_s")
 
     if subtype in {"hole_in_tank", "tank_leak", "gravity_driven"}:

@@ -10,7 +10,7 @@ import httpx
 
 API_BASE = os.environ.get("DEEPSAFETY_API_BASE", "http://127.0.0.1:8000").rstrip("/")
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "deepsafety-mcp", "version": "0.1.0"}
+SERVER_INFO = {"name": "deepsafety-mcp", "version": "1.0.0"}
 
 
 TOOLS = [
@@ -76,6 +76,19 @@ TOOLS = [
         "name": "get_service_catalog",
         "description": "Fetch the DeepSafety service catalog with equations, assumptions, constants, and references.",
         "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "call_api_path",
+        "description": "Call any DeepSafety API path directly. Use this for newly added OpenAPI-aligned endpoints that are not yet exposed as dedicated MCP tools.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "method": {"type": "string"},
+                "path": {"type": "string"},
+                "body": {"type": "object"},
+            },
+            "required": ["method", "path"],
+        },
     },
     {
         "name": "define_scenario",
@@ -321,6 +334,14 @@ def _handle_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
 
         if name == "get_service_catalog":
             data = _call_api("GET", "/service-catalog")
+            return _tool_result(data)
+
+        if name == "call_api_path":
+            method = str(arguments["method"]).upper()
+            path = str(arguments["path"])
+            if not path.startswith("/"):
+                path = f"/{path}"
+            data = _call_api(method, path, arguments.get("body"))
             return _tool_result(data)
 
         if name == "define_scenario":

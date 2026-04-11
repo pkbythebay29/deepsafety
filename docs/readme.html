@@ -52,15 +52,12 @@
             </p>
           </div>
           <div>
-            <h2>Implemented layers</h2>
+            <h2>Modeling chain</h2>
             <ul class="doc-list">
-              <li>Scenario definition engine</li>
-              <li>Scenario library</li>
-              <li>Source model service</li>
-              <li>Dispersion modeling service</li>
-              <li>Fire and explosion modeling service</li>
-              <li>Effect modeling service</li>
-              <li>Visualization layer</li>
+              <li>Materials and operating/design data are the upstream foundation</li>
+              <li>Scenario definition and source models create the release term</li>
+              <li>Dispersion and effects use that release term downstream</li>
+              <li>Hazard-evaluation workflows consume the physical outputs explicitly</li>
             </ul>
           </div>
           <div>
@@ -114,26 +111,58 @@ docker compose up --build</code></pre>
         </div>
         <div class="two-col">
           <div>
-            <h3>Source and dispersion</h3>
+            <h3>Data, source, and dispersion</h3>
             <ul class="doc-list">
+              <li>Material records for toxicity, flammability, and reactivity starter data</li>
               <li>Gas release: choked, non-choked, pipe, hole, relief, vessel blowdown</li>
               <li>Liquid release: tank hole, pipe flow, gravity-driven, pressure-driven</li>
               <li>Flashing and two-phase screening</li>
               <li>Pool formation and evaporation screening</li>
               <li>Gaussian plume, Gaussian puff, dense-gas screening</li>
+              <li>Isopleths, toxic-endpoint evaluation, and mitigation-adjusted dispersion</li>
             </ul>
           </div>
           <div>
-            <h3>Hazards and effects</h3>
+            <h3>Hazards, safeguards, and studies</h3>
             <ul class="doc-list">
+              <li>Flammability mixture, LOC, and ignition energy screening</li>
               <li>Jet fire, pool fire, fireball BLEVE</li>
               <li>TNT equivalency, multi-energy, VCE</li>
               <li>Toxic, thermal, and explosion probit models</li>
               <li>Toxic, thermal, and explosion dose-response curves</li>
-              <li>Population-based expected cases from effect models</li>
+              <li>Prevention, reactivity, and relief-system analysis endpoints</li>
+              <li>HAZOP, FMEA, What-If, checklist, and input-validation workflows</li>
             </ul>
           </div>
         </div>
+      </section>
+
+      <section class="docs-grid">
+        <article class="card stack">
+          <div class="panel-header">
+            <h2>Physics transparency</h2>
+            <p>Equations and constants are intended to be shown inside applications, not hidden.</p>
+          </div>
+          <ul class="doc-list">
+            <li><code>shared.gravity_standard</code>: gravity driving hydrostatic liquid discharge.</li>
+            <li><code>shared.universal_gas_constant</code>: gas-state relation used in compressible source terms.</li>
+            <li><code>fire.default_radiative_fraction</code>: share of fire energy treated as radiant heat.</li>
+            <li><code>fire.default_atmospheric_transmissivity</code>: share of radiation assumed to reach the receptor.</li>
+            <li>Starter registries are packaged as JSON files rather than being embedded directly in Python code.</li>
+          </ul>
+        </article>
+
+        <article class="card stack">
+          <div class="panel-header">
+            <h2>Documentation split</h2>
+            <p>Deep Safety keeps app, API docs, and README guidance on separate Pages routes.</p>
+          </div>
+          <ul class="doc-list">
+            <li><code>app.html</code> for the browser-local interactive tool</li>
+            <li><code>api-docs.html</code> for endpoint-first integration guidance</li>
+            <li><code>readme.html</code> for installation and repository-level overview</li>
+          </ul>
+        </article>
       </section>
 
       <p class="footer-note">
