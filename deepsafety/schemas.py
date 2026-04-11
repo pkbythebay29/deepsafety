@@ -22,6 +22,12 @@ class ConstantMetadata(BaseModel):
     source: str = "default"
 
 
+class ReferenceMetadata(BaseModel):
+    title: str
+    url: str | None = None
+    notes: str | None = None
+
+
 class ModelSummary(BaseModel):
     id: str
     name: str
@@ -38,6 +44,7 @@ class ModelDetail(ModelSummary):
     input_fields: list[FieldMetadata] = Field(default_factory=list)
     output_fields: list[FieldMetadata] = Field(default_factory=list)
     constants: list[ConstantMetadata] = Field(default_factory=list)
+    references: list[ReferenceMetadata] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
 
@@ -154,6 +161,8 @@ class ServiceResponse(BaseModel):
     outputs: dict[str, Any] = Field(default_factory=dict)
     equations: list[str] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
+    constants: list[ConstantMetadata] = Field(default_factory=list)
+    references: list[ReferenceMetadata] = Field(default_factory=list)
 
 
 class TemplateSummary(BaseModel):
@@ -175,3 +184,12 @@ class VisualizationRequest(BaseModel):
 class VisualizationResponse(BaseModel):
     layer_type: str
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class ServiceMetadata(BaseModel):
+    service_name: str
+    model_type: str
+    equations: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    constants: list[ConstantMetadata] = Field(default_factory=list)
+    references: list[ReferenceMetadata] = Field(default_factory=list)

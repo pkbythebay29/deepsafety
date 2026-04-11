@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DeepSafety GIS Console</title>
+    <title>Deep Safety</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,11 +22,11 @@
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Crowl and Louvar Integration Surface</p>
-          <h1>Map-first consequence analysis for leak and fire screening.</h1>
+          <p class="eyebrow">Deep Safety</p>
+          <h1>Simple consequence analysis for release and fire scenarios.</h1>
           <p class="lede">
-            Drop a source pin, add receptor pins, choose a scenario, and call the
-            DeepSafety API from a static GitHub Pages console.
+            Place a source, configure the scenario, and inspect the equations,
+            constants, and references behind each result.
           </p>
         </div>
         <div class="hero-card">
@@ -40,8 +40,7 @@
           </label>
           <button id="saveApiBase" class="primary-button">Save API URL</button>
           <p class="helper">
-            GitHub Pages hosts this UI and docs. The Python API itself should be
-            deployed separately, then referenced here.
+            Set the Deep Safety API URL used by this page.
           </p>
         </div>
       </header>
@@ -89,8 +88,8 @@
 
         <section class="map-card card">
           <div class="panel-header">
-            <h2>GIS Layer</h2>
-            <p>The API returns GeoJSON so other apps can render the same result.</p>
+            <h2>Map</h2>
+            <p>Impact zones and receptor checks are rendered from the live API response.</p>
           </div>
           <div id="map"></div>
         </section>
@@ -107,8 +106,8 @@
 
         <article class="card docs-card">
           <div class="panel-header">
-            <h2>Equations and Constants</h2>
-            <p>Every public model exposes the equations used plus its default constants.</p>
+            <h2>Model Details</h2>
+            <p>Hover the detail badges to see equations, constants, and reference sources explicitly.</p>
           </div>
           <div id="modelDocs"></div>
         </article>

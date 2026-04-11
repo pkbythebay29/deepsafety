@@ -35,6 +35,17 @@ def test_scenario_library_lists_templates() -> None:
     assert any("recommended_services" in item for item in payload)
 
 
+def test_service_catalog_exposes_equations_and_references() -> None:
+    response = client.get("/service-catalog")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "source_models" in payload
+    gas_release = next(item for item in payload["source_models"] if item["model_type"] == "gas_release")
+    assert gas_release["equations"]
+    assert gas_release["references"]
+
+
 def test_source_model_gas_release_returns_release_rate_and_mass() -> None:
     response = client.post(
         "/source-models/solve",
@@ -59,6 +70,8 @@ def test_source_model_gas_release_returns_release_rate_and_mass() -> None:
     assert payload["outputs"]["release_rate_kg_s"] > 0
     assert payload["outputs"]["total_mass_kg"] > payload["outputs"]["release_rate_kg_s"]
     assert payload["equations"]
+    assert payload["constants"]
+    assert payload["references"]
 
 
 def test_dispersion_service_gaussian_plume_returns_threshold_distance() -> None:

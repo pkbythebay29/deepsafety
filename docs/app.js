@@ -206,21 +206,54 @@ async function renderModelDocs() {
 
   try {
     const model = await fetchJson(`/models/${modelId}`);
+    const equationTooltip =
+      model.equations.length > 0 ? model.equations.join(" | ") : "No equations documented.";
+    const constantTooltip =
+      model.constants.length > 0
+        ? model.constants
+            .map(
+              (constant) =>
+                `${constant.name} = ${constant.value} ${constant.unit}; ${constant.description}; source=${constant.source}`,
+            )
+            .join(" | ")
+        : "No constants documented.";
+    const referenceTooltip =
+      model.references && model.references.length > 0
+        ? model.references
+            .map((reference) => `${reference.title}${reference.notes ? `: ${reference.notes}` : ""}`)
+            .join(" | ")
+        : "Source references are not listed for this model yet.";
     const equations = model.equations.map((equation) => `<li>${equation}</li>`).join("");
     const constants = model.constants
       .map(
         (constant) =>
-          `<li>${constant.name}: <strong>${constant.value}</strong> ${constant.unit}</li>`,
+          `<li>${constant.name}: <strong>${constant.value}</strong> ${constant.unit} - ${constant.description} (${constant.source})</li>`,
       )
       .join("");
+    const references =
+      model.references && model.references.length > 0
+        ? model.references
+            .map(
+              (reference) =>
+                `<li>${reference.title}${reference.notes ? ` - ${reference.notes}` : ""}${reference.url ? ` (<a href="${reference.url}" target="_blank" rel="noreferrer">link</a>)` : ""}</li>`,
+            )
+            .join("")
+        : "<li>No explicit references listed for this model yet.</li>";
     modelDocsContainer.innerHTML = `
       <article class="doc-card">
         <h3>${model.name}</h3>
         <p class="result-meta">${model.summary}</p>
+        <div class="detail-chip-row">
+          <span class="detail-chip" title="${equationTooltip.replace(/"/g, "&quot;")}">Equation details</span>
+          <span class="detail-chip" title="${constantTooltip.replace(/"/g, "&quot;")}">Constant details</span>
+          <span class="detail-chip" title="${referenceTooltip.replace(/"/g, "&quot;")}">Data source details</span>
+        </div>
         <h4>Equations</h4>
         <ul class="equation-list">${equations || "<li>No equations documented yet.</li>"}</ul>
         <h4>Default constants</h4>
         <ul class="constant-list">${constants || "<li>No model constants.</li>"}</ul>
+        <h4>References</h4>
+        <ul class="reference-list">${references}</ul>
       </article>
     `;
   } catch (error) {

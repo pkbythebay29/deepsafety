@@ -72,6 +72,111 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "get_service_catalog",
+        "description": "Fetch the DeepSafety service catalog with equations, assumptions, constants, and references.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "define_scenario",
+        "description": "Build a normalized scenario definition for realistic or worst-case screening.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "incident_type": {"type": "string"},
+                "classification": {"type": "string"},
+                "inventory": {"type": "object"},
+                "equipment": {"type": "object"},
+                "failure_mode": {"type": "string"},
+                "meteorology": {"type": "object"},
+                "release_height_m": {"type": "number"},
+                "topography": {"type": "string"},
+                "release_duration_s": {"type": "number"},
+                "conservative_mode": {"type": "boolean"},
+            },
+            "required": ["incident_type", "classification"],
+        },
+    },
+    {
+        "name": "list_scenario_templates",
+        "description": "List prebuilt DeepSafety scenario templates.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "solve_source_model",
+        "description": "Execute a DeepSafety source-term screening model.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "model_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["model_type"],
+        },
+    },
+    {
+        "name": "solve_dispersion_model",
+        "description": "Execute a DeepSafety dispersion screening model.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "model_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["model_type"],
+        },
+    },
+    {
+        "name": "solve_fire_explosion_model",
+        "description": "Execute a DeepSafety fire or explosion screening model.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "model_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["model_type"],
+        },
+    },
+    {
+        "name": "solve_effect_model",
+        "description": "Execute a DeepSafety toxic, thermal, or explosion effect model.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "model_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["model_type"],
+        },
+    },
+    {
+        "name": "solve_visualization",
+        "description": "Build a DeepSafety visualization payload such as contours or time evolution.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "layer_type": {"type": "string"},
+                "inputs": {"type": "object"},
+            },
+            "required": ["layer_type"],
+        },
+    },
+    {
+        "name": "get_impact_zones",
+        "description": "Generate map-ready impact circles for fire or leak screening.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scenario_type": {"type": "string"},
+                "source": {"type": "object"},
+                "asset": {"type": "object"},
+                "criteria": {"type": "array"},
+                "constants": {"type": "object"},
+            },
+            "required": ["scenario_type", "source"],
+        },
+    },
 ]
 
 
@@ -170,6 +275,72 @@ def _handle_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             model_id = arguments.get("model_id")
             path = f"/constants/{model_id}" if model_id else "/constants"
             data = _call_api("GET", path)
+            return _tool_result(data)
+
+        if name == "get_service_catalog":
+            data = _call_api("GET", "/service-catalog")
+            return _tool_result(data)
+
+        if name == "define_scenario":
+            data = _call_api("POST", "/scenario-engine/define", arguments)
+            return _tool_result(data)
+
+        if name == "list_scenario_templates":
+            data = _call_api("GET", "/scenario-library/templates")
+            return _tool_result(data)
+
+        if name == "solve_source_model":
+            data = _call_api(
+                "POST",
+                "/source-models/solve",
+                {"model_type": arguments["model_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
+        if name == "solve_dispersion_model":
+            data = _call_api(
+                "POST",
+                "/dispersion-models/solve",
+                {"model_type": arguments["model_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
+        if name == "solve_fire_explosion_model":
+            data = _call_api(
+                "POST",
+                "/fire-explosion-models/solve",
+                {"model_type": arguments["model_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
+        if name == "solve_effect_model":
+            data = _call_api(
+                "POST",
+                "/effect-models/solve",
+                {"model_type": arguments["model_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
+        if name == "solve_visualization":
+            data = _call_api(
+                "POST",
+                "/visualization/solve",
+                {"layer_type": arguments["layer_type"], "inputs": arguments.get("inputs", {})},
+            )
+            return _tool_result(data)
+
+        if name == "get_impact_zones":
+            data = _call_api(
+                "POST",
+                "/gis/impact-zones",
+                {
+                    "scenario_type": arguments["scenario_type"],
+                    "source": arguments["source"],
+                    "asset": arguments.get("asset", {}),
+                    "criteria": arguments.get("criteria", []),
+                    "constants": arguments.get("constants", {}),
+                },
+            )
             return _tool_result(data)
     except httpx.HTTPStatusError as exc:
         return _tool_error(

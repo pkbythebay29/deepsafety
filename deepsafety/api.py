@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from deepsafety.catalog import (
     ModelInputError,
@@ -32,8 +33,10 @@ from deepsafety.schemas import (
     ImpactZoneResponse,
     ModelDetail,
     ModelSummary,
+    ReferenceMetadata,
     ScenarioDefinitionRequest,
     ScenarioDefinitionResponse,
+    ServiceMetadata,
     ServiceRequest,
     ServiceResponse,
     TemplateSummary,
@@ -61,6 +64,28 @@ SOURCE_MODEL_METADATA = {
             "Ideal-gas compressible discharge screening relation.",
             "Pipe and hole releases share the same orifice-style discharge core with user-supplied geometry.",
         ],
+        "constants": [
+            {
+                "name": "shared.gravity_standard",
+                "value": 9.80665,
+                "unit": "m/s^2",
+                "description": "Standard gravity used in liquid and discharge relations.",
+                "source": "default",
+            },
+            {
+                "name": "shared.universal_gas_constant",
+                "value": 8.314462618,
+                "unit": "J/mol/K",
+                "description": "Universal gas constant used to derive gas-specific constants.",
+                "source": "default",
+            },
+        ],
+        "references": [
+            {
+                "title": "Crowl and Louvar source term screening relations",
+                "notes": "Compressible and incompressible release screening equations reflected in API service metadata.",
+            }
+        ],
     },
     "liquid_release": {
         "equations": [
@@ -70,6 +95,21 @@ SOURCE_MODEL_METADATA = {
         "assumptions": [
             "Incompressible liquid screening model.",
         ],
+        "constants": [
+            {
+                "name": "shared.gravity_standard",
+                "value": 9.80665,
+                "unit": "m/s^2",
+                "description": "Standard gravity used in gravity-driven discharge.",
+                "source": "default",
+            }
+        ],
+        "references": [
+            {
+                "title": "Crowl and Louvar liquid discharge screening relations",
+                "notes": "Tank and pipe liquid release equations documented here for API consumers.",
+            }
+        ],
     },
     "flashing": {
         "equations": [
@@ -77,6 +117,12 @@ SOURCE_MODEL_METADATA = {
         ],
         "assumptions": [
             "Single-step equilibrium-style flash estimate.",
+        ],
+        "references": [
+            {
+                "title": "Crowl and Louvar flashing liquid screening method",
+                "notes": "Flash fraction endpoint uses a simple thermodynamic screening relation rather than a full EOS flash calculation.",
+            }
         ],
     },
     "pool_formation": {
@@ -86,6 +132,12 @@ SOURCE_MODEL_METADATA = {
         "assumptions": [
             "Uniform pool thickness screening model.",
         ],
+        "references": [
+            {
+                "title": "Pool spreading screening approximation",
+                "notes": "Pool area is estimated from volume and layer thickness, then clipped by containment area if supplied.",
+            }
+        ],
     },
     "evaporation": {
         "equations": [
@@ -94,6 +146,12 @@ SOURCE_MODEL_METADATA = {
         ],
         "assumptions": [
             "Surface-limited evaporation screening model.",
+        ],
+        "references": [
+            {
+                "title": "Heat-transfer and mass-transfer limited evaporation screening",
+                "notes": "The endpoint exposes which evaporation mechanism is in use for transparency.",
+            }
         ],
     },
 }
@@ -105,6 +163,12 @@ DISPERSION_MODEL_METADATA = {
         "assumptions": [
             "Steady-state continuous release screening model.",
         ],
+        "references": [
+            {
+                "title": "Pasquill-Gifford Gaussian plume screening approach",
+                "notes": "Continuous release Gaussian plume with ground reflection and simplified sigma correlations.",
+            }
+        ],
     },
     "gaussian_puff": {
         "equations": [
@@ -112,6 +176,12 @@ DISPERSION_MODEL_METADATA = {
         ],
         "assumptions": [
             "Instantaneous puff screening model.",
+        ],
+        "references": [
+            {
+                "title": "Pasquill-Gifford Gaussian puff screening approach",
+                "notes": "Instantaneous puff relation used for screening concentration at a receptor.",
+            }
         ],
     },
     "dense_gas": {
@@ -121,46 +191,106 @@ DISPERSION_MODEL_METADATA = {
         "assumptions": [
             "Dense gas endpoint is a screening approximation, not a full heavy-gas CFD model.",
         ],
+        "references": [
+            {
+                "title": "Dense gas slumping screening approximation",
+                "notes": "Heavy-gas behavior is represented by a reduced-gravity slumping proxy for fast API evaluation.",
+            }
+        ],
     },
 }
 FIRE_EXPLOSION_METADATA = {
     "jet_fire": {
         "equations": ["q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)"],
         "assumptions": ["Point-source radiation screening for jet fire impacts."],
+        "references": [
+            {
+                "title": "Point-source fire radiation screening model",
+                "notes": "Used for fast jet fire impact estimates.",
+            }
+        ],
     },
     "pool_fire": {
         "equations": ["m_dot = A_pool * m''", "q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)"],
         "assumptions": ["Pool fire heat flux is treated with a point-source radiation approximation."],
+        "references": [
+            {
+                "title": "Pool fire screening relations",
+                "notes": "Burning rate and point-source radiation approximation are exposed explicitly.",
+            }
+        ],
     },
     "fireball_bleve": {
         "equations": ["D = 5.8 * M^0.325", "t = 0.45 * M^0.26"],
         "assumptions": ["BLEVE fireball size and duration use common empirical screening relations."],
+        "references": [
+            {
+                "title": "BLEVE fireball empirical screening relations",
+                "notes": "Empirical fireball size and duration forms are documented for transparency.",
+            }
+        ],
     },
     "tnt_equivalency": {
         "equations": ["W_TNT = eta * M * DeltaH_c / H_TNT"],
         "assumptions": ["Explosion converted to TNT equivalent for screening overpressure."],
+        "references": [
+            {
+                "title": "TNT equivalency screening method",
+                "notes": "Energy yield is transformed into TNT equivalent for quick overpressure screening.",
+            }
+        ],
     },
     "multi_energy": {
         "equations": ["Equivalent TNT scaled by user-supplied blast strength factor."],
         "assumptions": ["Multi-energy implementation is screening-level rather than a full chart-based implementation."],
+        "references": [
+            {
+                "title": "Multi-energy screening approximation",
+                "notes": "Blast strength is simplified into an equivalent TNT scaling factor for fast API use.",
+            }
+        ],
     },
     "vce": {
         "equations": ["W_TNT = yield_factor * M_cloud * DeltaH_c / H_TNT"],
         "assumptions": ["Yield factor is driven by ignition delay and congestion for screening."],
+        "references": [
+            {
+                "title": "Vapor cloud explosion screening method",
+                "notes": "Yield factor is explicitly driven by cloud size, ignition delay, and congestion proxy inputs.",
+            }
+        ],
     },
 }
 EFFECT_MODEL_METADATA = {
     "toxic_probit": {
         "equations": ["Y = a + b * ln(C^n * t)"],
         "assumptions": ["Fatality probability derived from a probit-to-normal conversion."],
+        "references": [
+            {
+                "title": "Toxic probit screening relation",
+                "notes": "Dose-response result returned with explicit probit parameters and probability transform.",
+            }
+        ],
     },
     "thermal_probit": {
         "equations": ["Y = a + b * ln(I^(4/3) * t)"],
         "assumptions": ["Burn probability derived from a thermal probit screening relation."],
+        "references": [
+            {
+                "title": "Thermal probit screening relation",
+                "notes": "Thermal load is converted into a screening injury probability using a probit transform.",
+            }
+        ],
     },
     "explosion_probit": {
         "equations": ["Y = a + b * ln(P)"],
         "assumptions": ["Explosion fatality probability derived from overpressure probit form."],
+        "references": [
+            {
+                "title": "Explosion overpressure probit screening relation",
+                "notes": "Overpressure is transformed into a screening fatality probability.",
+            }
+        ],
     },
 }
 
@@ -177,6 +307,21 @@ def _to_constant_metadata(
             source=str(definition.get("source", "default")),
         )
         for name, definition in constants.items()
+    ]
+
+
+def _to_reference_metadata(
+    references: list[dict[str, object]] | tuple[dict[str, object], ...] | None,
+) -> list[ReferenceMetadata]:
+    if not references:
+        return []
+    return [
+        ReferenceMetadata(
+            title=str(reference["title"]),
+            url=str(reference["url"]) if reference.get("url") else None,
+            notes=str(reference["notes"]) if reference.get("notes") else None,
+        )
+        for reference in references
     ]
 
 
@@ -221,6 +366,7 @@ def _to_model_detail(model) -> ModelDetail:
             for field in model.output_fields
         ],
         constants=_to_constant_metadata(resolved_constants),
+        references=[],
         notes=list(model.notes),
     )
 
@@ -230,12 +376,24 @@ def _service_response(
     outputs: dict[str, object],
     metadata: dict[str, dict[str, list[str]]],
 ) -> ServiceResponse:
-    details = metadata.get(model_type, {"equations": [], "assumptions": []})
+    details = metadata.get(
+        model_type,
+        {"equations": [], "assumptions": [], "constants": [], "references": []},
+    )
     return ServiceResponse(
         model_type=model_type,
         outputs=outputs,
         equations=details["equations"],
         assumptions=details["assumptions"],
+        constants=_to_constant_metadata(
+            {
+                item["name"]: item
+                for item in details.get("constants", [])
+            }
+        )
+        if details.get("constants")
+        else [],
+        references=_to_reference_metadata(details.get("references", [])),
     )
 
 
@@ -346,6 +504,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
 
     @app.get("/")
     def root() -> dict[str, object]:
@@ -427,6 +586,59 @@ def create_app() -> FastAPI:
     @app.get("/scenario-library/templates", response_model=list[TemplateSummary])
     def get_scenario_templates() -> list[TemplateSummary]:
         return [TemplateSummary(**template) for template in list_templates()]
+
+    @app.get("/service-catalog")
+    def get_service_catalog() -> dict[str, list[ServiceMetadata]]:
+        return {
+            "source_models": [
+                ServiceMetadata(
+                    service_name="source_models",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=_to_constant_metadata(
+                        {item["name"]: item for item in details.get("constants", [])}
+                    )
+                    if details.get("constants")
+                    else [],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in SOURCE_MODEL_METADATA.items()
+            ],
+            "dispersion_models": [
+                ServiceMetadata(
+                    service_name="dispersion_models",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in DISPERSION_MODEL_METADATA.items()
+            ],
+            "fire_explosion_models": [
+                ServiceMetadata(
+                    service_name="fire_explosion_models",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in FIRE_EXPLOSION_METADATA.items()
+            ],
+            "effect_models": [
+                ServiceMetadata(
+                    service_name="effect_models",
+                    model_type=model_type,
+                    equations=details.get("equations", []),
+                    assumptions=details.get("assumptions", []),
+                    constants=[],
+                    references=_to_reference_metadata(details.get("references", [])),
+                )
+                for model_type, details in EFFECT_MODEL_METADATA.items()
+            ],
+        }
 
     @app.post("/source-models/solve", response_model=ServiceResponse)
     def solve_source(request: ServiceRequest) -> ServiceResponse:
