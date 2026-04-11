@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepSafety GIS Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Crowl and Louvar Integration Surface</p>
+          <h1>Map-first consequence analysis for leak and fire screening.</h1>
+          <p class="lede">
+            Drop a source pin, add receptor pins, choose a scenario, and call the
+            DeepSafety API from a static GitHub Pages console.
+          </p>
+        </div>
+        <div class="hero-card">
+          <label class="field">
+            <span>API base URL</span>
+            <input id="apiBaseUrl" type="url" placeholder="https://your-api.example.com" />
+          </label>
+          <label class="field">
+            <span>Optional map image overlay</span>
+            <input id="mapUpload" type="file" accept="image/*" />
+          </label>
+          <button id="saveApiBase" class="primary-button">Save API URL</button>
+          <p class="helper">
+            GitHub Pages hosts this UI and docs. The Python API itself should be
+            deployed separately, then referenced here.
+          </p>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="control-panel card">
+          <div class="panel-header">
+            <h2>Scenario Builder</h2>
+            <p>Drop a source pin, configure the asset, and generate screening circles or receptor checks.</p>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span>Scenario</span>
+              <select id="scenarioType">
+                <option value="leak">Leak</option>
+                <option value="fire">Fire</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Model</span>
+              <select id="modelId"></select>
+            </label>
+          </div>
+
+          <div id="scenarioFields" class="scenario-fields"></div>
+
+          <label class="field">
+            <span>Constant overrides (JSON)</span>
+            <textarea id="constantOverrides" rows="5" placeholder='{"fire.default_radiative_fraction": 0.4}'></textarea>
+          </label>
+
+          <div class="button-row">
+            <button id="sourceMode" class="secondary-button">Place source</button>
+            <button id="receptorMode" class="secondary-button">Place receptors</button>
+            <button id="resetMap" class="ghost-button">Reset map</button>
+          </div>
+
+          <div class="button-row">
+            <button id="runImpactZones" class="primary-button">Draw impact circle</button>
+            <button id="runScenario" class="secondary-button">Analyze receptors</button>
+          </div>
+        </section>
+
+        <section class="map-card card">
+          <div class="panel-header">
+            <h2>GIS Layer</h2>
+            <p>The API returns GeoJSON so other apps can render the same result.</p>
+          </div>
+          <div id="map"></div>
+        </section>
+      </main>
+
+      <section class="docs-layout">
+        <article class="card results-card">
+          <div class="panel-header">
+            <h2>Results</h2>
+            <p>Impact circles and receptor outputs are both rendered from the live API.</p>
+          </div>
+          <div id="results"></div>
+        </article>
+
+        <article class="card docs-card">
+          <div class="panel-header">
+            <h2>Equations and Constants</h2>
+            <p>Every public model exposes the equations used plus its default constants.</p>
+          </div>
+          <div id="modelDocs"></div>
+        </article>
+      </section>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
