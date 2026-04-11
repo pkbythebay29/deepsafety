@@ -57,15 +57,15 @@ Each model documents the equations used and the constants applied in the respons
 ### Source Model Service
 
 - Gas and vapor release:
-  choked flow, non-choked compressible flow, pipe/hole-style discharge
+  choked flow, non-choked compressible flow, explicit hole release, pipe release with friction, relief discharge, vessel blowdown inventory limiting
 - Liquid release:
-  tank-hole gravity discharge, pressurized liquid release
+  tank-hole gravity discharge, pipe flow, pressure-driven release, friction-limited liquid pipe screening
 - Flashing and two-phase:
-  flash fraction, vapor mass, rainout mass
+  flash fraction, vapor mass, entrained liquid estimate, rainout estimation
 - Pool formation:
-  free-spreading or diked pool area
+  free-spreading or diked pool area, spreading factor support
 - Evaporation:
-  heat-transfer-limited and mass-transfer-limited screening models
+  heat-transfer-limited, mass-transfer-limited, and boil-off style screening models
 
 ### Dispersion Modeling Service
 
@@ -81,6 +81,8 @@ Derived outputs include plume width, maximum concentration location, and thresho
   `jet_fire`, `pool_fire`, `fireball_bleve`
 - Explosion:
   `tnt_equivalency`, `multi_energy`, `vce`
+- VCE complexity inputs:
+  cloud mass, ignition delay, and congestion factor
 
 ### Effect Modeling Service
 
@@ -91,6 +93,7 @@ Derived outputs include plume width, maximum concentration location, and thresho
 ### Visualization Layer
 
 - `plume_map`
+- `heatmap`
 - `risk_contours`
 - `time_evolution`
 
@@ -238,11 +241,62 @@ It walks through:
 - generating fire and leak impact zones
 - calling the HTTP API locally with `TestClient`
 
+For direct notebook use as a library:
+
+```python
+from deepsafety import DeepSafetyClient
+
+client = DeepSafetyClient("http://127.0.0.1:8000")
+client.get_service_catalog()
+```
+## Installation
+
+Install the package:
+
+```powershell
+pip install deepsafety
+```
+
+For notebook workflows:
+
+```powershell
+pip install "deepsafety[jupyter]"
+```
+
 ## Running the API
 
 ```powershell
 & 'E:\conda-env\krionis-tester-2\python.exe' -m uvicorn deepsafety.api:app --host 127.0.0.1 --port 8000
 ```
+
+After installation, you can also use:
+
+```powershell
+deepsafety-api
+```
+
+or:
+
+```powershell
+python -m deepsafety
+```
+
+## Docker
+
+Build and run the API container:
+
+```powershell
+docker build -t deepsafety .
+docker run --rm -p 8000:8000 deepsafety
+```
+
+Or with Compose:
+
+```powershell
+docker compose up --build
+```
+
+The container exposes the same `deepsafety` package and API used for local Python and Jupyter workflows.
 
 ## MCP Server
 

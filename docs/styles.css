@@ -1,14 +1,14 @@
 :root {
-  --bg: #f5f1e8;
-  --bg-strong: #efe6d4;
-  --paper: rgba(255, 252, 246, 0.88);
+  --bg: #f6f4ef;
+  --bg-strong: #ebe6dc;
+  --paper: #fffdf9;
   --ink: #143642;
   --ink-soft: #45636d;
   --accent: #ea6a47;
   --accent-strong: #d84b1d;
   --line: rgba(20, 54, 66, 0.14);
-  --shadow: 0 30px 80px rgba(20, 54, 66, 0.14);
-  --radius: 24px;
+  --shadow: 0 14px 32px rgba(20, 54, 66, 0.08);
+  --radius: 18px;
 }
 
 * {
@@ -20,10 +20,7 @@ body {
   min-height: 100vh;
   font-family: "Space Grotesk", sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at top left, rgba(234, 106, 71, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(20, 54, 66, 0.14), transparent 32%),
-    linear-gradient(180deg, var(--bg) 0%, #fbf8f1 100%);
+  background: linear-gradient(180deg, var(--bg) 0%, #fbfaf7 100%);
 }
 
 .page-shell {
@@ -48,33 +45,19 @@ body {
 .hero-copy,
 .hero-card,
 .card {
-  position: relative;
-  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
 }
 
 .hero-copy {
-  padding: 36px;
-}
-
-.hero-copy::after,
-.card::after {
-  content: "";
-  position: absolute;
-  inset: auto -10% -55% auto;
-  width: 180px;
-  height: 180px;
-  background: radial-gradient(circle, rgba(234, 106, 71, 0.18), transparent 70%);
-  pointer-events: none;
+  padding: 28px;
 }
 
 .hero-card,
 .card {
-  padding: 24px;
+  padding: 20px;
 }
 
 .eyebrow {
@@ -93,9 +76,9 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(2.3rem, 5vw, 4.8rem);
-  line-height: 0.95;
-  max-width: 11ch;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 1.02;
+  max-width: 13ch;
 }
 
 .lede,
@@ -155,6 +138,32 @@ h1 {
   letter-spacing: 0.08em;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-help {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(20, 54, 66, 0.12);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-family: "IBM Plex Mono", monospace;
+  cursor: help;
+}
+
 input,
 select,
 textarea,
@@ -167,9 +176,9 @@ select,
 textarea {
   width: 100%;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(20, 54, 66, 0.18);
-  background: rgba(255, 255, 255, 0.86);
+  background: #ffffff;
   color: var(--ink);
 }
 
@@ -188,7 +197,7 @@ textarea {
 button {
   border: 0;
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 11px 16px;
   cursor: pointer;
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
@@ -221,7 +230,7 @@ button:hover {
 #map {
   width: 100%;
   min-height: 520px;
-  border-radius: 22px;
+  border-radius: 14px;
   border: 1px solid var(--line);
   overflow: hidden;
 }
@@ -232,9 +241,9 @@ button:hover {
 
 .result-card,
 .doc-card {
-  padding: 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  padding: 16px;
+  border-radius: 14px;
+  background: #ffffff;
   border: 1px solid rgba(20, 54, 66, 0.08);
 }
 

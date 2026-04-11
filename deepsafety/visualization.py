@@ -9,12 +9,14 @@ def build_visualization_layer(layer_type: str, payload: dict[str, object]) -> di
     layer_type = layer_type.lower()
     if layer_type == "plume_map":
         return _build_plume_map(payload)
+    if layer_type == "heatmap":
+        return _build_heatmap(payload)
     if layer_type == "risk_contours":
         return _build_risk_contours(payload)
     if layer_type == "time_evolution":
         return _build_time_evolution(payload)
     raise ModelInputError(
-        "Visualization layer must be one of plume_map, risk_contours, or time_evolution."
+        "Visualization layer must be one of plume_map, heatmap, risk_contours, or time_evolution."
     )
 
 
@@ -40,6 +42,39 @@ def _build_plume_map(payload: dict[str, object]) -> dict[str, object]:
         "layer_type": "plume_map",
         "source": source,
         "grid": grid,
+    }
+
+
+def _build_heatmap(payload: dict[str, object]) -> dict[str, object]:
+    source = payload["source"]
+    x_distances = payload.get("x_distances_m", [50, 100, 200, 400, 800])
+    y_offsets = payload.get("y_offsets_m", [-200, -100, -50, 0, 50, 100, 200])
+    points = []
+    for distance in x_distances:
+        for offset in y_offsets:
+            result = solve_dispersion_model(
+                "gaussian_plume",
+                {
+                    "release_rate_kg_s": payload["release_rate_kg_s"],
+                    "wind_speed_m_s": payload["wind_speed_m_s"],
+                    "x_m": distance,
+                    "y_m": offset,
+                    "z_m": payload.get("z_m", 0.0),
+                    "release_height_m": payload.get("release_height_m", 0.0),
+                    "stability_class": payload.get("stability_class", "D"),
+                },
+            )
+            points.append(
+                {
+                    "x_m": distance,
+                    "y_m": offset,
+                    "concentration_kg_m3": result["concentration_kg_m3"],
+                }
+            )
+    return {
+        "layer_type": "heatmap",
+        "source": source,
+        "points": points,
     }
 
 

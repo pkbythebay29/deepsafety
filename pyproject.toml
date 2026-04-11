@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "deepsafety"
 version = "0.1.0"
-description = "A Python library for industrial and safety calculations"
+description = "Process safety consequence analysis library and API"
 dependencies = [
     "fastapi>=0.115,<1.0",
     "httpx>=0.28,<1.0",
     "pydantic>=2.0,<3.0",
     "uvicorn>=0.30,<1.0",
 ]
+requires-python = ">=3.10"
 authors = [
     { name="Pkbythebay29", email="kannan@haztechrisk.org" }
 ]
@@ -20,16 +21,31 @@ readme = "README.md"
 keywords = ["process safety", "dispersion", "flammability", "explosions", "toxicology"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
 Homepage = "https://github.com/pkbythebay29/deepsafety"
+Documentation = "https://github.com/pkbythebay29/deepsafety"
+Repository = "https://github.com/pkbythebay29/deepsafety"
 
 [project.scripts]
 deepsafety-api = "deepsafety.api:main"
 deepsafety-mcp = "deepsafety.mcp_server:main"
+
+[project.optional-dependencies]
+jupyter = [
+    "ipykernel>=6.0",
+    "jupyterlab>=4.0",
+]
+dev = [
+    "build>=1.2",
+    "pytest>=8.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["deepsafety"]

@@ -188,3 +188,72 @@ def test_gaussian_plume_threshold_distance_increases_when_threshold_drops() -> N
     )
 
     assert lower_threshold["distance_to_threshold_m"] > higher_threshold["distance_to_threshold_m"]
+
+
+def test_pipe_gas_release_with_friction_is_lower_than_simple_hole_release() -> None:
+    hole_release = solve_source_model(
+        "gas_release",
+        {
+            "diameter_m": 0.02,
+            "upstream_pressure_pa": 5_000_000,
+            "downstream_pressure_pa": 101_325,
+            "temperature_k": 288.15,
+            "heat_capacity_ratio": 1.3,
+            "molecular_weight_kg_kmol": 16.04,
+            "duration_s": 60,
+            "source_subtype": "hole",
+        },
+    )
+    pipe_release = solve_source_model(
+        "gas_release",
+        {
+            "pipe_diameter_m": 0.02,
+            "upstream_pressure_pa": 5_000_000,
+            "downstream_pressure_pa": 101_325,
+            "temperature_k": 288.15,
+            "heat_capacity_ratio": 1.3,
+            "molecular_weight_kg_kmol": 16.04,
+            "duration_s": 60,
+            "source_subtype": "pipe",
+            "pipe_length_m": 80,
+            "reynolds_number": 100000,
+        },
+    )
+
+    assert pipe_release["release_rate_kg_s"] < hole_release["release_rate_kg_s"]
+
+
+def test_vessel_blowdown_is_limited_by_available_inventory() -> None:
+    result = solve_source_model(
+        "gas_release",
+        {
+            "relief_area_m2": 0.001,
+            "upstream_pressure_pa": 3_000_000,
+            "downstream_pressure_pa": 101_325,
+            "temperature_k": 300,
+            "heat_capacity_ratio": 1.3,
+            "molecular_weight_kg_kmol": 16.04,
+            "duration_s": 600,
+            "source_subtype": "relief_discharge",
+            "vessel_volume_m3": 10,
+            "final_pressure_pa": 200000,
+            "inventory_mass_kg": 150,
+        },
+    )
+
+    assert result["total_mass_kg"] <= 150
+    assert result["source_subtype"] == "vessel_blowdown"
+
+
+def test_evaporation_supports_boil_off_heat_input_mode() -> None:
+    result = solve_source_model(
+        "evaporation",
+        {
+            "area_m2": 25,
+            "latent_heat_j_kg": 350000,
+            "wall_heat_input_kw": 40,
+        },
+    )
+
+    assert result["submodel"] == "boiling_heat_input_limited"
+    assert result["evaporation_rate_kg_s"] > 0

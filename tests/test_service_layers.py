@@ -136,6 +136,104 @@ def test_fire_explosion_service_vce_responds_to_delay_and_congestion() -> None:
     assert payload["overpressure_kpa"] > 0
 
 
+def test_fire_explosion_service_jet_fire_is_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "jet_fire",
+            "inputs": {
+                "release_rate_kg_s": 3.0,
+                "heat_of_combustion_kj_kg": 46000,
+                "distance_m": 30,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["heat_flux_kw_m2"] > 0
+    assert payload["flame_length_m"] > 0
+
+
+def test_fire_explosion_service_pool_fire_is_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "pool_fire",
+            "inputs": {
+                "pool_area_m2": 40,
+                "burning_flux_kg_m2_s": 0.05,
+                "heat_of_combustion_kj_kg": 44000,
+                "distance_m": 35,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["burning_rate_kg_s"] > 0
+    assert payload["heat_flux_kw_m2"] > 0
+
+
+def test_fire_explosion_service_fireball_bleve_is_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "fireball_bleve",
+            "inputs": {
+                "fuel_mass_kg": 1200,
+                "heat_of_combustion_kj_kg": 46000,
+                "distance_m": 80,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["fireball_diameter_m"] > 0
+    assert payload["fireball_duration_s"] > 0
+
+
+def test_fire_explosion_service_tnt_equivalency_is_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "tnt_equivalency",
+            "inputs": {
+                "fuel_mass_kg": 300,
+                "heat_of_combustion_kj_kg": 46000,
+                "explosion_efficiency": 0.1,
+                "distance_m": 100,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["tnt_equivalent_mass_kg"] > 0
+    assert payload["overpressure_kpa"] > 0
+
+
+def test_fire_explosion_service_multi_energy_is_available() -> None:
+    response = client.post(
+        "/fire-explosion-models/solve",
+        json={
+            "model_type": "multi_energy",
+            "inputs": {
+                "fuel_mass_kg": 300,
+                "heat_of_combustion_kj_kg": 46000,
+                "blast_strength": 6,
+                "distance_m": 100,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["outputs"]
+    assert payload["equivalent_tnt_kg"] > 0
+    assert payload["overpressure_kpa"] > 0
+
+
 def test_effect_model_thermal_probit_returns_probability() -> None:
     response = client.post(
         "/effect-models/solve",
@@ -197,3 +295,25 @@ def test_visualization_time_evolution_returns_frames() -> None:
     payload = response.json()["payload"]
     assert len(payload["frames"]) == 4
     assert payload["frames"][-1]["radius_m"] == 250.0
+
+
+def test_visualization_heatmap_returns_grid_points() -> None:
+    response = client.post(
+        "/visualization/solve",
+        json={
+            "layer_type": "heatmap",
+            "inputs": {
+                "source": {"latitude": 51.5074, "longitude": -0.1278},
+                "release_rate_kg_s": 2.0,
+                "wind_speed_m_s": 3.0,
+                "stability_class": "D",
+                "x_distances_m": [50, 100],
+                "y_offsets_m": [-50, 0, 50],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["payload"]
+    assert payload["layer_type"] == "heatmap"
+    assert len(payload["points"]) == 6

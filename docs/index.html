@@ -23,25 +23,30 @@
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Deep Safety</p>
-          <h1>Simple consequence analysis for release and fire scenarios.</h1>
+          <h1>Consequence analysis made usable.</h1>
           <p class="lede">
-            Place a source, configure the scenario, and inspect the equations,
-            constants, and references behind each result.
+            Place a source, fill in the scenario values, and inspect the exact
+            assumptions behind every result.
           </p>
         </div>
         <div class="hero-card">
           <label class="field">
-            <span>API base URL</span>
+            <span class="field-label-row">
+              <span>API base URL</span>
+              <span class="info-badge" title="The Deep Safety backend this page calls for calculations, model metadata, and map layers.">?</span>
+            </span>
             <input id="apiBaseUrl" type="url" placeholder="https://your-api.example.com" />
+            <small class="field-help">Set the API endpoint this page should use.</small>
           </label>
           <label class="field">
-            <span>Optional map image overlay</span>
+            <span class="field-label-row">
+              <span>Map image overlay</span>
+              <span class="info-badge" title="Optional site image or drawing placed over the current map view for visual context.">?</span>
+            </span>
             <input id="mapUpload" type="file" accept="image/*" />
+            <small class="field-help">Optional image for site context over the map.</small>
           </label>
           <button id="saveApiBase" class="primary-button">Save API URL</button>
-          <p class="helper">
-            Set the Deep Safety API URL used by this page.
-          </p>
         </div>
       </header>
 
@@ -54,24 +59,36 @@
 
           <div class="grid">
             <label class="field">
-              <span>Scenario</span>
+              <span class="field-label-row">
+                <span>Scenario</span>
+                <span class="info-badge" title="Choose the type of consequence workflow to run. Leak focuses on release and dispersion impacts. Fire focuses on thermal impacts.">?</span>
+              </span>
               <select id="scenarioType">
                 <option value="leak">Leak</option>
                 <option value="fire">Fire</option>
               </select>
+              <small class="field-help">Select the hazard type to evaluate.</small>
             </label>
 
             <label class="field">
-              <span>Model</span>
+              <span class="field-label-row">
+                <span>Model</span>
+                <span class="info-badge" title="The calculation model used for the current scenario. The detail panel explains the exact equations, constants, and references.">?</span>
+              </span>
               <select id="modelId"></select>
+              <small class="field-help">Select the calculation model for this scenario.</small>
             </label>
           </div>
 
           <div id="scenarioFields" class="scenario-fields"></div>
 
           <label class="field">
-            <span>Constant overrides (JSON)</span>
+            <span class="field-label-row">
+              <span>Constant overrides</span>
+              <span class="info-badge" title="Optional JSON object used to override default model constants for sensitivity checks or alternate assumptions.">?</span>
+            </span>
             <textarea id="constantOverrides" rows="5" placeholder='{"fire.default_radiative_fraction": 0.4}'></textarea>
+            <small class="field-help">Optional JSON overrides for model constants.</small>
           </label>
 
           <div class="button-row">
