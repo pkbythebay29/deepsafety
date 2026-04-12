@@ -228,8 +228,9 @@ Deep Safety now publishes through GitHub Actions:
 
 Required repository configuration:
 
-- Add `PYPI_API_TOKEN` in repository secrets
-- Configure a `pypi` environment in GitHub (recommended for protected release approvals)
+- Add `PYPI_API_TOKEN` in GitHub secrets (repository or `pypi` environment secret)
+- Optional fallback secret name: `PYPI_TOKEN`
+- Configure a `pypi` environment in GitHub if you want protected release approvals
 
 Release flow:
 
