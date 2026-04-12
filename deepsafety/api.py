@@ -159,7 +159,7 @@ SOURCE_MODEL_METADATA = {
         ],
         "references": [
             {
-                "title": "Crowl and Louvar source term screening relations",
+                "title": "Source term screening relations",
                 "notes": "Compressible and incompressible release screening equations reflected in API service metadata.",
             }
         ],
@@ -177,7 +177,7 @@ SOURCE_MODEL_METADATA = {
         ],
         "references": [
             {
-                "title": "Crowl and Louvar liquid discharge screening relations",
+                "title": "Liquid discharge screening relations",
                 "notes": "Tank and pipe liquid release equations documented here for API consumers.",
             }
         ],
@@ -191,7 +191,7 @@ SOURCE_MODEL_METADATA = {
         ],
         "references": [
             {
-                "title": "Crowl and Louvar flashing liquid screening method",
+                "title": "Flashing liquid screening method",
                 "notes": "Flash fraction endpoint uses a simple thermodynamic screening relation rather than a full EOS flash calculation.",
             }
         ],

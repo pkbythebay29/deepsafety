@@ -34,12 +34,13 @@
 
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Deep Safety Docs</p>
-          <h1>Reference documentation for process safety modeling.</h1>
+          <p class="eyebrow">Deep Safety</p>
+          <h1>A foundational physics layer for process safety decisions.</h1>
           <p class="lede">
-            Deep Safety is organized like a technical library: foundational
-            data, model families, tutorials, and application patterns are kept
-            separate so teams can move quickly from evaluation to integration.
+            Deep Safety is built as a verifiable physics-driven layer for
+            consequence and hazard analysis. It is designed to be integrated
+            into notebooks, control-room tools, web apps, GIS workflows, and
+            agent systems through one consistent model contract.
           </p>
           <div class="doc-tabs">
             <a class="doc-tab is-active" href="./index.html">Documentation Home</a>
@@ -56,12 +57,12 @@
 
         <aside class="hero-panel stack">
           <div>
-            <h2>Documentation map</h2>
+            <h2>What Deep Safety does</h2>
             <p class="doc-copy">
-              The structure mirrors how engineers actually use the product:
-              learn the model chain, inspect endpoint contracts, study worked
-              examples, then wire the same contract into notebooks, apps, or
-              agents.
+              It turns material data and operating conditions into source
+              terms, dispersion fields, fire and explosion metrics, and
+              effect-model outputs that can be consumed directly by
+              decision-support systems.
             </p>
           </div>
           <div>
@@ -75,6 +76,7 @@
 GET /materials
 POST /source-models/scenario/select
 POST /dispersion/gaussian-plume
+POST /effect-models/solve
 POST /hazard-evaluation/hazop</div>
         </aside>
       </header>
@@ -114,15 +116,14 @@ POST /hazard-evaluation/hazop</div>
         <main class="docs-content">
           <section class="doc-section">
             <p class="eyebrow">Overview</p>
-            <h2>The model chain comes first</h2>
+            <h2>Physics first, integration second, decisions always</h2>
             <p class="section-intro">
-              Deep Safety treats the material model as foundational. Material
-              properties, toxicity, flammability, reactivity, equipment design
-              data, and operating conditions feed source models. Source models
-              generate release rate, duration, and phase information. Those
-              outputs then feed dispersion, fire, explosion, and effect
-              calculations, which finally support HAZOP, FMEA, What-If, and
-              related hazard-evaluation workflows.
+              Material properties and operating conditions are treated as
+              upstream dependencies. Source models generate release rate and
+              phase state; dispersion and fire/explosion models convert those
+              outputs into consequence metrics; hazard-evaluation workflows then
+              consume the same outputs for HAZOP, FMEA, and What-If studies.
+              This makes the chain auditable and consistent across tools.
             </p>
           </section>
 
@@ -199,19 +200,19 @@ POST /hazard-evaluation/hazop</div>
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Explicit equations and constants</h3>
+                <h3>Verifiable equations and constants</h3>
                 <p>
-                  Responses and documentation explain which equations are used,
-                  which constants appear, and what each constant means
-                  physically.
+                  Equations, constants, and physical meaning are explicit in
+                  responses and docs. Constants can be overridden per request
+                  for sensitivity studies and what-if analysis.
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Browser, package, API, and MCP</h3>
+                <h3>Built for every integration surface</h3>
                 <p>
-                  The same contract can be used from GitHub Pages, Python,
-                  FastAPI, or the MCP bridge without inventing separate model
-                  vocabularies.
+                  Use the same model contract in browser-local mode, Python
+                  notebooks, FastAPI services, Docker deployments, and MCP
+                  tools without rewriting calculation logic.
                 </p>
               </article>
             </div>

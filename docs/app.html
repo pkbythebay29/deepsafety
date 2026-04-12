@@ -44,8 +44,9 @@
         <p>
           The form defaults to browser-local mode, so the experience works even
           without an external API endpoint. Every field explains what it means,
-          and every model panel shows the equations, constants, and source
-          notes used for the result.
+          every model panel shows the equations, constants, and source
+          notes used for the result, and impact output is rendered as
+          consequence rings so you can see effect intensity by radius.
         </p>
       </header>
 
@@ -113,6 +114,12 @@
             <strong>Sign intelligence:</strong> upload a sign photo if you have
             one, then add the text from the sign or OCR. Deep Safety will map
             it to a leak-ready scenario seed.
+          </div>
+
+          <div class="callout">
+            <strong>Consequence rings:</strong> each impact run draws multiple
+            rings (severe, primary, awareness) so radius can be interpreted
+            against effect intensity instead of a single boundary.
           </div>
 
           <label class="field">

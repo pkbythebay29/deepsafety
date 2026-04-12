@@ -67,6 +67,7 @@
               <li><a href="#effects">Effects and toxic criteria</a></li>
               <li><a href="#prevention-relief">Prevention and relief</a></li>
               <li><a href="#hazard-evaluation">Hazard evaluation</a></li>
+              <li><a href="#post-contracts">POST endpoint contracts</a></li>
               <li><a href="#formulas">Analytical formulas</a></li>
               <li><a href="#constants">Constants and provenance</a></li>
             </ul>
@@ -563,6 +564,249 @@ A_vent = V_enclosure^(2/3) * [K / (Pmax * Pred)] * 0.1</pre>
                 </tr>
               </tbody>
             </table>
+          </section>
+
+          <section class="doc-section" id="post-contracts">
+            <p class="eyebrow">Integration Contracts</p>
+            <h2>POST endpoint families, expected JSON, and governing formulas</h2>
+            <p class="section-intro">
+              These tables are designed as implementation contracts. Each row
+              shows the expected top-level JSON shape and the primary physics
+              relation the endpoint family applies.
+            </p>
+
+            <h3>Scenario and source controllers</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Expected JSON keys</th>
+                  <th>Primary formula(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /scenario-engine/define</code></td>
+                  <td><code>incident_type</code>, <code>classification</code>, <code>inventory</code>, <code>equipment</code>, <code>failure_mode</code>, <code>meteorology</code>, <code>topography</code></td>
+                  <td>Scenario assumptions selection; source formulas applied downstream.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /source-models/*</code></td>
+                  <td>Model-specific payload. Typical keys: geometry/area, pressure, temperature, density, duration, inventory.</td>
+                  <td><code>m_dot_choked</code>, <code>m_dot_nonchoked</code>, <code>v = C_d * sqrt(2gh)</code>, <code>v = C_d * sqrt(2*DeltaP/rho)</code>, <code>f_flash</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /source-models/solve</code></td>
+                  <td><code>{\"model_type\": \"...\", \"inputs\": {...}}</code></td>
+                  <td>Dispatches to source formulas above by <code>model_type</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>Dispersion controllers</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Expected JSON keys</th>
+                  <th>Primary formula(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /dispersion/gaussian-plume</code></td>
+                  <td><code>releaseRate</code>, <code>windSpeed</code>, <code>stabilityClass</code>, <code>releaseHeight</code>, <code>receptorGrid</code></td>
+                  <td><code>C_plume = Q_dot / (2*pi*u*sigma_y*sigma_z) * ...</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/gaussian-puff</code></td>
+                  <td><code>releasedMass</code>, <code>windSpeed</code>, <code>stabilityClass</code>, <code>receptorGrid</code></td>
+                  <td><code>C_puff = M / ((2*pi)^(3/2)*sigma_y^2*sigma_z) * ...</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/dense-gas</code></td>
+                  <td><code>releasedMass</code> or <code>releaseRate</code>, <code>gasDensityKgM3</code>, <code>releaseDurationS</code>, <code>windSpeed</code>, <code>receptorGrid</code></td>
+                  <td>Dense-gas slumping screening relation (reduced-gravity style proxy).</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/isopleth</code></td>
+                  <td><code>dispersionResultId</code>, <code>threshold</code></td>
+                  <td>Threshold contour extraction from computed concentration field.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/toxic-endpoints/evaluate</code></td>
+                  <td><code>dispersionResultId</code>, <code>criteria</code>[]</td>
+                  <td>Distance extraction where <code>C >= criterion</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion/prevention-mitigation</code></td>
+                  <td><code>releaseRate</code>, <code>mitigationFactor</code>, <code>windSpeed</code></td>
+                  <td><code>m_dot_revised = m_dot * (1 - mitigation_factor)</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /dispersion-models/solve</code></td>
+                  <td><code>{\"model_type\": \"...\", \"inputs\": {...}}</code></td>
+                  <td>Dispatches plume/puff/dense-gas relations by <code>model_type</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>Fire, explosion, and effects controllers</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Expected JSON keys</th>
+                  <th>Primary formula(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /fire-explosion/*</code></td>
+                  <td>Depends on controller. Typical keys: fuel/cloud mass, heat of combustion, distance, ignition/congestion terms.</td>
+                  <td><code>q = chi_r*m_dot*DeltaH_c/(4*pi*r^2)</code>, <code>W_TNT</code>, <code>Z</code>, <code>P(Z)</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /fire-explosion-models/solve</code></td>
+                  <td><code>{\"model_type\": \"jet_fire|pool_fire|...\", \"inputs\": {...}}</code></td>
+                  <td>Dispatches fire/explosion submodel formulas by <code>model_type</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /effect-models/solve</code></td>
+                  <td><code>{\"model_type\": \"toxic_probit|thermal_probit|...\", \"inputs\": {...}}</code></td>
+                  <td><code>Y = a + b*ln(dose)</code>, <code>Pr = 0.5*(1+erf((Y-5)/sqrt(2)))</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /toxic-criteria/lookup</code></td>
+                  <td><code>{\"model_type\": \"toxic_criteria_lookup\", \"inputs\": {...}}</code> or direct criteria payload</td>
+                  <td>Registry lookup/merge (criteria retrieval, not transport formula).</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>Prevention, reactivity, relief, and hazard controllers</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Expected JSON keys</th>
+                  <th>Primary formula(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /prevention/*</code></td>
+                  <td>Method-specific payload (for example purge, static-risk, area-classification fields).</td>
+                  <td><code>V_purge = V_vessel * cycles / purity</code> and screening score relations.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /reactivity/*</code></td>
+                  <td>Calorimetry/screening/control payloads with chemistry and process context.</td>
+                  <td>Screening relations and rule-based control logic.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /relief/*</code></td>
+                  <td>Service/sizing payloads: required mass rate, density, pressure, temperature, quality, enclosure terms.</td>
+                  <td><code>A_relief_liquid</code>, <code>A_relief_gas</code>, <code>A_relief_two_phase</code>, <code>A_vent</code></td>
+                </tr>
+                <tr>
+                  <td><code>POST /hazard-evaluation/*</code></td>
+                  <td>Study payload (nodes/modes/guidewords/checklists/context fields).</td>
+                  <td>Structured workflow controllers that consume upstream model outputs.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /prevention-response-models/solve</code></td>
+                  <td><code>{\"model_type\": \"...\", \"inputs\": {...}}</code></td>
+                  <td>Dispatches prevention-response screening relations by <code>model_type</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>GIS, visualization, and sign controllers</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Endpoint family</th>
+                  <th>Expected JSON keys</th>
+                  <th>Primary formula(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>POST /gis/scenarios/evaluate</code></td>
+                  <td><code>scenario_type</code>, <code>source</code>, <code>receptors</code>[], <code>model_id</code>, <code>inputs</code>, <code>constants</code></td>
+                  <td>Applies selected model per receptor with haversine distance pre-processing.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /gis/impact-zones</code></td>
+                  <td><code>scenario_type</code>, <code>source</code>, <code>asset</code>, <code>criteria</code>[], <code>constants</code></td>
+                  <td>Impact radius relation from selected impact model, then geodesic circle polygon mapping.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /visualization/solve</code></td>
+                  <td><code>{\"layer_type\": \"plume_map|heatmap|...\", \"inputs\": {...}}</code></td>
+                  <td>Transforms modeled outputs into layer-specific map payloads.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /signs/analyze</code></td>
+                  <td><code>observed_text</code> and/or image payload, optional locale/site context fields</td>
+                  <td>Text classification heuristics to seed scenario and impact workflows.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>POST JSON templates</h3>
+            <p class="section-intro">
+              Use these templates as controller-level payload contracts.
+            </p>
+            <div class="equation-panel">
+              <pre>Service solver template
+{
+  "model_type": "gaussian_plume",
+  "inputs": {
+    "...": "model-specific input fields"
+  }
+}
+
+Model calculate template
+{
+  "inputs": { "...": "model input fields" },
+  "constants": { "constant.name": 123.0 }
+}
+
+GIS scenario evaluation template
+{
+  "scenario_type": "leak",
+  "source": { "latitude": 0.0, "longitude": 0.0, "label": "Source" },
+  "receptors": [
+    { "id": "r1", "latitude": 0.0, "longitude": 0.0, "label": "Receptor 1" }
+  ],
+  "model_id": "dispersion.gaussian_puff_ground",
+  "inputs": { "...": "scenario/model inputs" },
+  "constants": { "constant.name": 123.0 }
+}
+
+GIS impact-zones template
+{
+  "scenario_type": "fire",
+  "source": { "latitude": 0.0, "longitude": 0.0, "label": "Source" },
+  "asset": { "...": "asset fields" },
+  "criteria": [
+    { "label": "Primary ring", "threshold": 12.5, "unit": "kW/m^2" },
+    { "label": "Awareness ring", "threshold": 4.0, "unit": "kW/m^2" }
+  ],
+  "constants": { "fire.default_radiative_fraction": 0.35 }
+}
+
+Sign analysis template
+{
+  "observed_text": "High pressure gas pipeline",
+  "site_context": "roadside corridor",
+  "topography": "urban",
+  "stability_class": "D",
+  "wind_speed_m_s": 3.0
+}</pre>
+            </div>
           </section>
 
           <section class="doc-section" id="formulas">

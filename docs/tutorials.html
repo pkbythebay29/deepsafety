@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -34,11 +34,11 @@
 
       <header class="page-title">
         <p class="eyebrow">Tutorials</p>
-        <h1>Training guides for package users, API integrators, and browser users.</h1>
+        <h1>Real incident-style walkthroughs with runnable notebooks.</h1>
         <p class="doc-copy">
-          These tutorials are designed to shorten the time between first install
-          and a working application. Each guide is intentionally practical and
-          follows the same model chain used by the API itself.
+          These tutorials are designed to be practical, reproducible, and physics
+          transparent. Each one links to a notebook that can be run locally with
+          the same API and constants system used in production integrations.
         </p>
       </header>
 
@@ -52,10 +52,10 @@
       <section class="tutorial-grid">
         <article class="tutorial-card" id="quickstart">
           <p class="eyebrow">Quick Start</p>
-          <h2>Get to first result in ten minutes</h2>
+          <h2>Get to first consequence result in ten minutes</h2>
           <p>
-            Install the package, inspect available materials, select a scenario,
-            run a source calculation, and feed the result into dispersion.
+            Install the package, load materials, select a release scenario, run a
+            source model, then feed that output to dispersion and effect models.
           </p>
           <div class="code-block">
             <pre><code>pip install deepsafety
@@ -63,119 +63,122 @@
 from deepsafety import DeepSafetyClient
 
 client = DeepSafetyClient("http://127.0.0.1:8000")
-materials = client.list_materials("chlorine")
+materials = client.list_materials("gasoline")
 scenario = client.select_release_scenario({
     "scenarioType": "worst_case",
-    "equipmentType": "pipe",
-    "inventoryMass": 2500,
+    "equipmentType": "tank",
+    "inventoryMass": 5000,
     "siteTopography": "urban"
 })</code></pre>
           </div>
         </article>
 
-        <article class="tutorial-card" id="api-training">
-          <p class="eyebrow">API Workflow</p>
-          <h2>Build an API-first consequence workflow</h2>
-          <p>
-            Use materials as the upstream selector, then call source, then
-            dispersion, then effect or hazard-evaluation endpoints.
-          </p>
-          <div class="equation-panel">
-            <pre>1. GET /materials/{materialId}
-2. POST /source-models/scenario/select
-3. POST /source-models/gas-pipe
-4. POST /dispersion/gaussian-plume
-5. POST /effect-models/solve or /hazard-evaluation/*</pre>
-          </div>
-        </article>
-
         <article class="tutorial-card" id="scenario-training">
-          <p class="eyebrow">Scenario Training</p>
-          <h2>Understand realistic versus worst-case assumptions</h2>
+          <p class="eyebrow">Scenario Logic</p>
+          <h2>Realistic vs worst-case vs conservative runs</h2>
           <p>
-            Deep Safety keeps realistic, worst-case, and conservative analysis
-            explicit because those are modeling decisions, not hidden defaults.
+            Deep Safety keeps scenario mode explicit so teams can compare outcomes
+            rather than hiding assumptions inside one black-box endpoint.
           </p>
           <table class="reference-table">
             <thead>
               <tr>
-                <th>Choice</th>
-                <th>Typical intent</th>
-                <th>When to use</th>
+                <th>Mode</th>
+                <th>Intent</th>
+                <th>Typical use</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><code>realistic_case</code></td>
-                <td>Site-informed screening</td>
-                <td>Operational planning and scenario comparison</td>
+                <td>Best-estimate operating conditions</td>
+                <td>Operational planning and day-to-day risk decisions</td>
               </tr>
               <tr>
                 <td><code>worst_case</code></td>
-                <td>Highly conservative screening</td>
-                <td>Regulatory-style bounding cases and outer envelopes</td>
+                <td>Bounding assumptions</td>
+                <td>Regulatory screening and envelope checks</td>
               </tr>
               <tr>
                 <td><code>conservative-analysis</code></td>
-                <td>Intentional overprediction of the source term</td>
-                <td>Safety margin studies and rapid screening</td>
+                <td>Intentional overestimation</td>
+                <td>Safety margin and sensitivity studies</td>
               </tr>
             </tbody>
           </table>
         </article>
 
-        <article class="tutorial-card" id="browser-training">
-          <p class="eyebrow">Browser-Local</p>
-          <h2>Use the Pages app without an external backend</h2>
+        <article class="tutorial-card" id="buncefield-training">
+          <p class="eyebrow">Incident Walkthrough</p>
+          <h2>Buncefield-style vapor cloud workflow</h2>
           <p>
-            The browser-local runtime is useful for demos, lightweight
-            screening, and embedded tools that should work directly on GitHub
-            Pages.
+            This notebook shows how to configure a tank-overfill style release,
+            build source and dispersion screening outputs, and evaluate blast
+            proxy metrics with explicit assumptions and constants.
+          </p>
+          <div class="callout">
+            <strong>Notebook:</strong>
+            <a href="https://github.com/pkbythebay29/deepsafety/blob/main/notebooks/buncefield_tutorial.ipynb" target="_blank" rel="noreferrer">buncefield_tutorial.ipynb</a>
+          </div>
+          <div class="equation-panel">
+            <pre>Source -> dispersion -> VCE screening
+W_TNT = m_fuel * DeltaH_c * eta / DeltaH_TNT
+Z = R / W_TNT^(1/3)</pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card" id="csb-training">
+          <p class="eyebrow">Incident Walkthrough</p>
+          <h2>CSB-style toxic release and effect workflow</h2>
+          <p>
+            This notebook demonstrates a toxic release chain using source,
+            Gaussian dispersion, toxic criteria lookup, and probit-based effect
+            estimation for population screening.
+          </p>
+          <div class="callout">
+            <strong>Notebook:</strong>
+            <a href="https://github.com/pkbythebay29/deepsafety/blob/main/notebooks/csb_incident_tutorial.ipynb" target="_blank" rel="noreferrer">csb_incident_tutorial.ipynb</a>
+          </div>
+          <div class="equation-panel">
+            <pre>Toxic load and response
+L_toxic = C^n * t
+Y = a + b * ln(L_toxic)
+Pr = 0.5 * [1 + erf((Y - 5) / sqrt(2))]</pre>
+          </div>
+        </article>
+
+        <article class="tutorial-card" id="constants-training">
+          <p class="eyebrow">Verification</p>
+          <h2>Change a constant and measure the impact</h2>
+          <p>
+            The tutorial notebooks include a sensitivity section where one
+            constant is overridden per request to show how outputs shift in a
+            controlled and auditable way.
           </p>
           <div class="code-block">
-            <pre><code>const result = await window.DeepSafetyBrowserApi.request(
-  "POST",
-  "/gis/impact-zones",
-  {
-    scenarioType: "leak",
-    source: { latitude: 52.52, longitude: 13.405 },
-    config: { released_mass_kg: 50, threshold_kg_m3: 0.02 }
+            <pre><code>{
+  "constants": {
+    "fire.default_radiative_fraction": 0.4
   }
-);</code></pre>
+}</code></pre>
           </div>
+          <p class="doc-copy">
+            This pattern is useful for design-margin studies and assumption
+            reviews without forking model code.
+          </p>
         </article>
 
         <article class="tutorial-card" id="notebook-training">
-          <p class="eyebrow">Jupyter</p>
-          <h2>Explore the package in notebooks</h2>
+          <p class="eyebrow">Notebook Bundle</p>
+          <h2>Try all tutorial notebooks</h2>
           <p>
-            Use the packaged client or the local notebook examples to inspect
-            model metadata, constants, and response payloads before wiring the
-            models into a larger application.
+            Start with explorer, then run incident-focused notebooks.
           </p>
-          <div class="code-block">
-            <pre><code>pip install "deepsafety[jupyter]"
-
-from deepsafety import DeepSafetyClient
-
-client = DeepSafetyClient("http://127.0.0.1:8000")
-catalog = client.get_service_catalog()</code></pre>
-          </div>
-        </article>
-
-        <article class="tutorial-card">
-          <p class="eyebrow">Integration Pattern</p>
-          <h2>Show equations and constants in your own UI</h2>
-          <p>
-            Deep Safety is intended to make the model transparent to the end
-            user. Pull the service catalog and present equations, constants, and
-            physical meanings alongside the form fields that drive them.
-          </p>
-          <div class="callout">
-            <strong>Tip:</strong> combine <code>GET /service-catalog</code> with
-            the module-specific endpoints so the UI shows the actual equation
-            and the physical meaning of each constant near the results.
-          </div>
+          <ul class="doc-list">
+            <li><a href="https://github.com/pkbythebay29/deepsafety/blob/main/notebooks/deepsafety_explorer.ipynb" target="_blank" rel="noreferrer">deepsafety_explorer.ipynb</a></li>
+            <li><a href="https://github.com/pkbythebay29/deepsafety/blob/main/notebooks/buncefield_tutorial.ipynb" target="_blank" rel="noreferrer">buncefield_tutorial.ipynb</a></li>
+            <li><a href="https://github.com/pkbythebay29/deepsafety/blob/main/notebooks/csb_incident_tutorial.ipynb" target="_blank" rel="noreferrer">csb_incident_tutorial.ipynb</a></li>
+          </ul>
         </article>
       </section>
 

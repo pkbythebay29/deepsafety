@@ -360,18 +360,71 @@ async function renderModelDocs() {
 
 function renderZoneLayers(payload) {
   clearZoneLayers();
+  const palette = ["#8b0000", "#ea6a47", "#ffb703", "#2a9d8f"];
   payload.geojson.features
     .filter((feature) => feature.geometry.type === "Polygon")
     .forEach((feature, index) => {
       const layer = L.geoJSON(feature, {
         style: {
-          color: index % 2 === 0 ? "#ea6a47" : "#143642",
+          color: palette[index % palette.length],
           weight: 2,
-          fillOpacity: 0.14,
+          fillOpacity: 0.18,
         },
       }).addTo(map);
+      if (feature.properties && feature.properties.label) {
+        layer.bindTooltip(
+          `${feature.properties.label}: ${Number(feature.properties.radius_m || 0).toFixed(1)} m`,
+          { sticky: true },
+        );
+      }
       state.zoneLayers.push(layer);
     });
+}
+
+function leakCriteria(threshold) {
+  return [
+    {
+      label: "Severe consequence ring",
+      threshold: threshold * 3,
+      unit: "kg/m^3",
+      effect: "Severe acute exposure screening zone",
+    },
+    {
+      label: "Primary consequence ring",
+      threshold,
+      unit: "kg/m^3",
+      effect: "Primary concern screening zone",
+    },
+    {
+      label: "Awareness ring",
+      threshold: threshold * 0.3,
+      unit: "kg/m^3",
+      effect: "Extended awareness and planning zone",
+    },
+  ];
+}
+
+function fireCriteria(threshold) {
+  return [
+    {
+      label: "Severe thermal ring",
+      threshold: Math.max(threshold * 2.5, threshold + 10),
+      unit: "kW/m^2",
+      effect: "High lethality thermal exposure screening zone",
+    },
+    {
+      label: "Primary thermal ring",
+      threshold,
+      unit: "kW/m^2",
+      effect: "Primary burn and escalation screening zone",
+    },
+    {
+      label: "Cautionary thermal ring",
+      threshold: Math.max(threshold * 0.32, 4),
+      unit: "kW/m^2",
+      effect: "Lower-intensity thermal exposure screening zone",
+    },
+  ];
 }
 
 async function runScenario() {
@@ -457,13 +510,7 @@ async function runImpactZones() {
               burning_rate_kg_s: formInputs.burning_rate_kg_s,
               heat_of_combustion_kj_kg: formInputs.heat_of_combustion_kj_kg,
             },
-            criteria: [
-              {
-                label: "Thermal impact threshold",
-                threshold: formInputs.impact_threshold_kw_m2,
-                unit: "kW/m^2",
-              },
-            ],
+            criteria: fireCriteria(formInputs.impact_threshold_kw_m2),
             constants: parseConstants(),
           }
         : {
@@ -484,13 +531,7 @@ async function runImpactZones() {
               leak_duration_s: formInputs.leak_duration_s,
               stability_class: formInputs.stability_class,
             },
-            criteria: [
-              {
-                label: "Concern threshold",
-                threshold: formInputs.impact_threshold_kg_m3,
-                unit: "kg/m^3",
-              },
-            ],
+            criteria: leakCriteria(formInputs.impact_threshold_kg_m3),
             constants: parseConstants(),
           };
 
@@ -503,12 +544,13 @@ async function runImpactZones() {
     renderZoneLayers(result);
     renderResultsMarkup(
       result.zones.map(
-        (zone) => `
+        (zone, index) => `
           <article class="result-card">
-            <h3>${zone.label}</h3>
+            <h3>Ring ${index + 1}: ${zone.label}</h3>
             <p class="result-meta">Radius: ${zone.radius_m.toFixed(2)} m</p>
-            <p class="result-meta">Area: ${zone.area_m2.toFixed(2)} m²</p>
+            <p class="result-meta">Area: ${zone.area_m2.toFixed(2)} m^2</p>
             <p class="result-meta">Threshold: ${zone.threshold} ${zone.unit}</p>
+            <p class="result-meta">Effect meaning: ${(payload.criteria[index] && payload.criteria[index].effect) || "Consequence screening ring"}</p>
           </article>
         `,
       ),
