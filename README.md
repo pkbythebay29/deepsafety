@@ -1,31 +1,25 @@
 ﻿# Deep Safety
 
-Deep Safety is a foundational process-safety layer for **physics-driven, verifiable consequence analysis**.
+Deep Safety is a physics-based process safety platform for **verifiable consequence analysis, hazard evaluation, and software integration**.
+
+Documentation site: [deepsafety.tech](https://deepsafety.tech)
 
 It gives teams one model contract that can be used across:
 - Python notebooks
 - FastAPI services
 - GitHub Pages browser-local workflows
-- MCP/agent tooling
+- MCP and agent tooling
 - Docker deployments
 
-The goal is simple: keep the physics explicit and reusable so decision systems can rely on the same source-term, dispersion, fire/explosion, and effect logic.
+Deep Safety keeps the physics explicit and reusable so decision systems can rely on a consistent chain for source terms, dispersion, fire and explosion metrics, effects, and hazard-study workflows.
 
 ## Quick Start
 
-```bash
-$ pip install deepsafety
-$ deepsafety-api
-$ python -m deepsafety
-```
-
-Typing-style cue:
-
 ```text
-user@plant:~$ pip install deepsafety
+user@deepsafety.tech:~$ pip install deepsafety
 Collecting deepsafety ...
 Successfully installed deepsafety
-user@plant:~$ deepsafety-api --host 0.0.0.0 --port 8000
+user@deepsafety.tech:~$ deepsafety-api --host 0.0.0.0 --port 8000
 Deep Safety API ready at http://0.0.0.0:8000  _
 ```
 
@@ -41,13 +35,14 @@ $ pip install "deepsafety[jupyter]"
 - Transparent constants: physical meaning and source are documented
 - Cross-platform integration: same model vocabulary in API, notebooks, app, and MCP tools
 - Sensitivity-friendly design: constants can be overridden per request
+- Product-ready deployment: package, Docker image, static site, and API are designed to be consumed directly by applications
 
 ## Model Chain
 
 1. Materials and operating conditions define the basis.
-2. Scenario and source models calculate release rate, duration, and phase.
-3. Dispersion, fire/explosion, and effect models compute consequence metrics.
-4. Hazard-evaluation workflows consume the same outputs in HAZOP/FMEA/What-If style studies.
+2. Scenario and source models calculate release rate, duration, and phase state.
+3. Dispersion, fire and explosion, and effect models compute consequence metrics.
+4. Hazard-evaluation workflows consume the same outputs in HAZOP, FMEA, and What-If studies.
 
 ## Data Provenance
 
@@ -57,11 +52,11 @@ Starter registries are packaged as JSON data (not hard-coded in model logic):
 - `deepsafety/data/toxic_criteria_registry.json`
 - `deepsafety/data/constants_registry.json`
 
-This keeps assumptions inspectable and easier to govern.
+This keeps assumptions inspectable, versionable, and easier to govern.
 
 ## Constants Override Example
 
-Constants can be overridden request-by-request for sensitivity studies.
+Constants can be overridden request-by-request for sensitivity studies and controlled assumption audits.
 
 ```json
 {
@@ -192,6 +187,8 @@ GIS, visualization, and sign analysis:
 - `docs/app.html` -> interactive map app (with consequence rings)
 - `docs/readme.html` -> web copy of this README
 
+The public documentation surface is published at [deepsafety.tech](https://deepsafety.tech).
+
 ## Notebook Entry Points
 
 - `notebooks/all_endpoints_tutorial_workbook.ipynb`
@@ -215,7 +212,7 @@ docker compose up --build
 
 ## CI/CD and PyPI Publishing
 
-Deep Safety now publishes through GitHub Actions:
+Deep Safety publishes through GitHub Actions:
 
 - `CI` workflow:
   - runs tests

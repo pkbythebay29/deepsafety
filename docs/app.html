@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deep Safety App</title>
+    <title>Deep Safety | App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,7 +25,7 @@
           <div class="brand-mark">DS</div>
           <div class="brand-text">
             <strong>Deep Safety</strong>
-            <span>Interactive app</span>
+            <span>deepsafety.tech</span>
           </div>
         </div>
         <div class="nav-links">
@@ -39,14 +39,14 @@
       </nav>
 
       <header class="page-title">
-        <p class="eyebrow">Deep Safety App</p>
-        <h1>Place the source. Set the parameters. Read the assumptions.</h1>
+        <p class="eyebrow">Interactive application</p>
+        <h1>Configure a scenario, inspect assumptions, and map consequence rings.</h1>
         <p>
-          The form defaults to browser-local mode, so the experience works even
-          without an external API endpoint. Every field explains what it means,
-          every model panel shows the equations, constants, and source
-          notes used for the result, and impact output is rendered as
-          consequence rings so you can see effect intensity by radius.
+          The application defaults to browser-local mode, so it works without
+          an external API endpoint. Each field explains the required parameter,
+          each model panel shows the equations, constants, and provenance used
+          for the result, and impact output is rendered as consequence rings so
+          effect intensity can be interpreted by radius.
         </p>
       </header>
 
@@ -111,15 +111,15 @@
           <div id="scenarioFields" class="scenario-fields"></div>
 
           <div class="callout">
-            <strong>Sign intelligence:</strong> upload a sign photo if you have
-            one, then add the text from the sign or OCR. Deep Safety will map
-            it to a leak-ready scenario seed.
+            <strong>Sign intelligence:</strong> upload a sign photo, add the
+            text from the sign or OCR, and seed a release scenario directly
+            from the observed warning information.
           </div>
 
           <div class="callout">
             <strong>Consequence rings:</strong> each impact run draws multiple
-            rings (severe, primary, awareness) so radius can be interpreted
-            against effect intensity instead of a single boundary.
+            rings so radius can be interpreted against effect intensity instead
+            of a single boundary.
           </div>
 
           <label class="field">
@@ -194,7 +194,7 @@
           </div>
 
           <div class="button-row">
-            <button id="runImpactZones" class="primary-button">Draw impact circle</button>
+            <button id="runImpactZones" class="primary-button">Draw consequence rings</button>
             <button id="runScenario" class="secondary-button">Analyze receptors</button>
           </div>
         </section>
@@ -212,7 +212,7 @@
         <article class="card">
           <div class="panel-header">
             <h2>Results</h2>
-            <p>Impact circles and receptor checks come directly from the API contract.</p>
+            <p>Consequence rings and receptor checks are produced from the same model contract exposed by the API.</p>
           </div>
           <div id="results"></div>
         </article>
@@ -220,7 +220,7 @@
         <article class="card">
           <div class="panel-header">
             <h2>Model Details</h2>
-            <p>Hover the badges to inspect equations, constants, and data source notes.</p>
+            <p>Inspect the equations, constants, and source notes used by the active model.</p>
           </div>
           <div id="modelDocs"></div>
         </article>

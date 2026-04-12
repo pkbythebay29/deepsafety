@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deep Safety Documentation</title>
+    <title>Deep Safety | deepsafety.tech</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,7 +19,7 @@
           <div class="brand-mark">DS</div>
           <div class="brand-text">
             <strong>Deep Safety</strong>
-            <span>Documentation</span>
+            <span>deepsafety.tech</span>
           </div>
         </div>
         <div class="nav-links">
@@ -34,13 +34,13 @@
 
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Deep Safety</p>
-          <h1>A foundational physics layer for process safety decisions.</h1>
+          <p class="eyebrow">deepsafety.tech</p>
+          <h1>Physics-based process safety infrastructure for decision systems.</h1>
           <p class="lede">
-            Deep Safety is built as a verifiable physics-driven layer for
-            consequence and hazard analysis. It is designed to be integrated
-            into notebooks, control-room tools, web apps, GIS workflows, and
-            agent systems through one consistent model contract.
+            Deep Safety provides a verifiable computational layer for
+            consequence analysis, hazard evaluation, and operational decision
+            support. One consistent model contract spans notebooks, APIs,
+            browser applications, GIS workflows, and agent systems.
           </p>
           <div class="doc-tabs">
             <a class="doc-tab is-active" href="./index.html">Documentation Home</a>
@@ -57,12 +57,12 @@
 
         <aside class="hero-panel stack">
           <div>
-            <h2>What Deep Safety does</h2>
+            <h2>What the platform exposes</h2>
             <p class="doc-copy">
-              It turns material data and operating conditions into source
-              terms, dispersion fields, fire and explosion metrics, and
-              effect-model outputs that can be consumed directly by
-              decision-support systems.
+              It converts material properties, equipment data, and operating
+              conditions into source terms, dispersion fields, fire and
+              explosion metrics, effect estimates, and hazard-study outputs
+              that can be consumed directly by software systems.
             </p>
           </div>
           <div>
@@ -72,12 +72,11 @@
             <span class="tag">Fire and explosion</span>
             <span class="tag">Hazard studies</span>
           </div>
-          <div class="path-block">GET /service-catalog
-GET /materials
+          <div class="path-block">pip install deepsafety
+deepsafety-api --host 0.0.0.0 --port 8000
+GET  /service-catalog
 POST /source-models/scenario/select
-POST /dispersion/gaussian-plume
-POST /effect-models/solve
-POST /hazard-evaluation/hazop</div>
+POST /effect-models/solve</div>
         </aside>
       </header>
 
@@ -116,7 +115,7 @@ POST /hazard-evaluation/hazop</div>
         <main class="docs-content">
           <section class="doc-section">
             <p class="eyebrow">Overview</p>
-            <h2>Physics first, integration second, decisions always</h2>
+            <h2>One physical model chain across operational software</h2>
             <p class="section-intro">
               Material properties and operating conditions are treated as
               upstream dependencies. Source models generate release rate and
@@ -129,7 +128,7 @@ POST /hazard-evaluation/hazop</div>
 
           <section class="doc-section">
             <p class="eyebrow">Modules</p>
-            <h2>Documentation entry points</h2>
+            <h2>Documentation and product entry points</h2>
             <div class="module-grid">
               <article class="module-list">
                 <div class="module-kicker">Reference</div>
@@ -189,10 +188,10 @@ POST /hazard-evaluation/hazop</div>
 
           <section class="doc-section">
             <p class="eyebrow">Highlights</p>
-            <h2>What engineers can use immediately</h2>
+            <h2>Immediate platform capabilities</h2>
             <div class="mini-grid">
               <article class="mini-card">
-                <h3>Detailed endpoint families</h3>
+                <h3>Comprehensive endpoint families</h3>
                 <p>
                   Materials, source terms, dispersion, fire, explosion, effect,
                   prevention, relief, and hazard-evaluation modules are already
@@ -200,7 +199,7 @@ POST /hazard-evaluation/hazop</div>
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Verifiable equations and constants</h3>
+                <h3>Transparent equations and constants</h3>
                 <p>
                   Equations, constants, and physical meaning are explicit in
                   responses and docs. Constants can be overridden per request
@@ -208,7 +207,7 @@ POST /hazard-evaluation/hazop</div>
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Built for every integration surface</h3>
+                <h3>Built for software integration</h3>
                 <p>
                   Use the same model contract in browser-local mode, Python
                   notebooks, FastAPI services, Docker deployments, and MCP
