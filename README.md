@@ -230,6 +230,7 @@ Required repository configuration:
 
 - Add `PYPI_API_TOKEN` in GitHub secrets (repository or `pypi` environment secret)
 - Optional fallback secret name: `PYPI_TOKEN`
+- Optional org/repo-specific fallback: `DEEPSAFETYPYPI`
 - Configure a `pypi` environment in GitHub if you want protected release approvals
 
 Release flow:

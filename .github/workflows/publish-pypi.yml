@@ -55,8 +55,8 @@ jobs:
 
       - name: Ensure PyPI token is configured
         run: |
-          if [ -z "${{ secrets.PYPI_API_TOKEN || secrets.PYPI_TOKEN }}" ]; then
-            echo "Missing PyPI token secret. Set PYPI_API_TOKEN (or PYPI_TOKEN)."
+          if [ -z "${{ secrets.PYPI_API_TOKEN || secrets.PYPI_TOKEN || secrets.DEEPSAFETYPYPI }}" ]; then
+            echo "Missing PyPI token secret. Set PYPI_API_TOKEN, PYPI_TOKEN, or DEEPSAFETYPYPI."
             exit 1
           fi
 
@@ -64,5 +64,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN || secrets.PYPI_TOKEN }}
+          password: ${{ secrets.PYPI_API_TOKEN || secrets.PYPI_TOKEN || secrets.DEEPSAFETYPYPI }}
           skip-existing: true
