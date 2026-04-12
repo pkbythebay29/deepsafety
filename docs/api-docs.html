@@ -11,6 +11,21 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+        },
+        svg: {
+          fontCache: "global",
+        },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    ></script>
   </head>
   <body>
     <div class="site-shell">
@@ -173,18 +188,61 @@
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>ppm -> mg/m3
-C_mg/m3 = C_ppm * MW * P / (R_atm * T) * 10^-3
-
-Generic probit
-Y = k1 + k2 * ln(V)
-
-Time-weighted average
-TWA = sum(C_i * t_i) / sum(t_i)
-
-Dilution ventilation screening
-Q_required = G / C_target * mixing_factor</pre>
+              <div class="formula-block">
+                <p class="formula-title">ppm to mg/m^3 conversion</p>
+                \[
+                C_{\mathrm{mg/m^3}} = C_{\mathrm{ppm}} \cdot MW \cdot \frac{P}{R_{\mathrm{atm}} T} \cdot 10^{-3}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Generic probit</p>
+                \[
+                Y = k_1 + k_2 \ln(V)
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Time-weighted average</p>
+                \[
+                \mathrm{TWA} = \frac{\sum_i C_i t_i}{\sum_i t_i}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Dilution ventilation screening</p>
+                \[
+                Q_{\mathrm{required}} = \frac{G}{C_{\mathrm{target}}} \cdot \mathrm{mixing\_factor}
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>C_mg/m3</code></td><td>Concentration expressed as mass per unit volume.</td><td>mg/m^3</td></tr>
+                <tr><td><code>C_ppm</code></td><td>Concentration expressed as parts per million by volume.</td><td>ppm(v/v)</td></tr>
+                <tr><td><code>MW</code></td><td>Molecular weight of the material.</td><td>g/mol</td></tr>
+                <tr><td><code>P</code></td><td>Absolute pressure used for gas-volume conversion.</td><td>Pa</td></tr>
+                <tr><td><code>R_atm</code></td><td>Gas constant used in the concentration conversion relation.</td><td>J/(mol*K)</td></tr>
+                <tr><td><code>T</code></td><td>Absolute temperature.</td><td>K</td></tr>
+                <tr><td><code>Y</code></td><td>Probit variable before conversion to response probability.</td><td>dimensionless</td></tr>
+                <tr><td><code>k1</code></td><td>Empirical probit intercept supplied by the selected toxicological, thermal, or blast correlation.</td><td>dimensionless</td></tr>
+                <tr><td><code>k2</code></td><td>Empirical probit slope multiplying the natural logarithm of the dose variable.</td><td>dimensionless when paired with the coefficient source's required dose units</td></tr>
+                <tr><td><code>V</code></td><td>Generic dose variable used by the selected probit model.</td><td>model-dependent; must match the units assumed by <code>k1</code> and <code>k2</code></td></tr>
+                <tr><td><code>TWA</code></td><td>Time-weighted average exposure.</td><td>same concentration unit as the input samples</td></tr>
+                <tr><td><code>C_i</code></td><td>Concentration during interval <code>i</code>.</td><td>mg/m^3, ppm, or the chosen concentration basis</td></tr>
+                <tr><td><code>t_i</code></td><td>Duration of interval <code>i</code>.</td><td>min, s, or h; use one consistent time unit within the sum</td></tr>
+                <tr><td><code>Q_required</code></td><td>Required ventilation flow rate.</td><td>m^3/s</td></tr>
+                <tr><td><code>G</code></td><td>Contaminant generation rate.</td><td>mg/s or kg/s, consistent with the concentration basis</td></tr>
+                <tr><td><code>C_target</code></td><td>Target airborne concentration to maintain by ventilation.</td><td>mg/m^3 or kg/m^3</td></tr>
+                <tr><td><code>mixing_factor</code></td><td>Dimensionless allowance for imperfect mixing or local inefficiency.</td><td>dimensionless</td></tr>
+                <tr><td><code>10^-3</code></td><td>Conversion factor used to align ppm, g/mol, Pa, and SI gas-constant units with mg/m^3 output.</td><td>dimensionless conversion factor</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="source-models">
@@ -197,8 +255,17 @@ Q_required = G / C_target * mixing_factor</pre>
               worst-case, and conservative analysis are first-class API choices.
             </p>
             <div class="equation-panel">
-              <pre>Choked gas release
-m_dot = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1)))</pre>
+              <div class="formula-block">
+                <p class="formula-title">Choked gas release</p>
+                \[
+                \dot{m} =
+                C_d A P_0
+                \sqrt{
+                \frac{k}{ZRT_0}
+                \left(\frac{2}{k+1}\right)^{\frac{k+1}{k-1}}
+                }
+                \]
+              </div>
             </div>
             <table class="reference-table">
               <thead>
@@ -237,31 +304,101 @@ m_dot = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1))
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>Hole or orifice area
-A = pi * d^2 / 4
-
-Pipe friction screening multiplier
-M_f = 1 / sqrt(1 + f * L / D)
-
-Liquid tank-hole release velocity
-v = C_d * sqrt(2 * g * h)
-
-Liquid pipe release velocity
-v = C_d * sqrt(2 * DeltaP / rho)
-
-Volumetric and mass release rate
-Q = A * v
-m_dot = rho * Q
-
-Inventory-limited release mass
-m_total = min(m_dot * t_release, m_inventory)
-
-Flash fraction screening
-f_flash = cp_liquid * (T_storage - T_boil) / DeltaH_vap
-
-Pool area screening
-A_pool = m_liquid / (rho * thickness) * spreading_factor</pre>
+              <div class="formula-block">
+                <p class="formula-title">Hole or orifice area</p>
+                \[
+                A = \frac{\pi d^2}{4}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Pipe friction screening multiplier</p>
+                \[
+                M_f = \frac{1}{\sqrt{1 + fL/D}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Liquid tank-hole release velocity</p>
+                \[
+                v = C_d \sqrt{2gh}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Liquid pipe release velocity</p>
+                \[
+                v = C_d \sqrt{\frac{2\Delta P}{\rho}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Volumetric and mass release rate</p>
+                \[
+                Q = Av
+                \qquad
+                \dot{m} = \rho Q
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Inventory-limited release mass</p>
+                \[
+                m_{\mathrm{total}} = \min \left(\dot{m} \, t_{\mathrm{release}}, \, m_{\mathrm{inventory}}\right)
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Flash fraction screening</p>
+                \[
+                f_{\mathrm{flash}} = \frac{c_{p,\mathrm{liquid}} \left(T_{\mathrm{storage}} - T_{\mathrm{boil}}\right)}{\Delta H_{\mathrm{vap}}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Pool area screening</p>
+                \[
+                A_{\mathrm{pool}} = \frac{m_{\mathrm{liquid}}}{\rho \, \mathrm{thickness}} \cdot \mathrm{spreading\_factor}
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>m_dot</code></td><td>Mass release rate.</td><td>kg/s</td></tr>
+                <tr><td><code>C_d</code></td><td>Discharge coefficient representing contraction and dissipative losses at the opening.</td><td>dimensionless</td></tr>
+                <tr><td><code>A</code></td><td>Hole or effective discharge area.</td><td>m^2</td></tr>
+                <tr><td><code>P0</code></td><td>Upstream absolute stagnation or storage pressure.</td><td>Pa</td></tr>
+                <tr><td><code>k</code></td><td>Ratio of specific heats <code>c_p/c_v</code> for the gas.</td><td>dimensionless</td></tr>
+                <tr><td><code>Z</code></td><td>Compressibility factor accounting for deviation from ideal-gas behavior.</td><td>dimensionless</td></tr>
+                <tr><td><code>R</code></td><td>Gas constant used in the choked-flow relation.</td><td>J/(kg*K) or J/(mol*K), matching the implementation basis</td></tr>
+                <tr><td><code>T0</code></td><td>Upstream absolute temperature.</td><td>K</td></tr>
+                <tr><td><code>pi</code></td><td>Geometric constant for circular area calculation.</td><td>dimensionless</td></tr>
+                <tr><td><code>d</code></td><td>Hole or orifice diameter.</td><td>m</td></tr>
+                <tr><td><code>M_f</code></td><td>Pipe-friction screening multiplier applied to ideal discharge.</td><td>dimensionless</td></tr>
+                <tr><td><code>f</code></td><td>Darcy friction factor for the pipe.</td><td>dimensionless</td></tr>
+                <tr><td><code>L</code></td><td>Pipe length from source to breach.</td><td>m</td></tr>
+                <tr><td><code>D</code></td><td>Internal pipe diameter.</td><td>m</td></tr>
+                <tr><td><code>v</code></td><td>Exit velocity of liquid or gas at the breach.</td><td>m/s</td></tr>
+                <tr><td><code>g</code></td><td>Gravitational acceleration used for hydrostatic discharge.</td><td>m/s^2</td></tr>
+                <tr><td><code>h</code></td><td>Liquid head above the hole centerline.</td><td>m</td></tr>
+                <tr><td><code>DeltaP</code></td><td>Driving pressure difference across the opening.</td><td>Pa</td></tr>
+                <tr><td><code>rho</code></td><td>Fluid density.</td><td>kg/m^3</td></tr>
+                <tr><td><code>Q</code></td><td>Volumetric release rate.</td><td>m^3/s</td></tr>
+                <tr><td><code>m_total</code></td><td>Total released mass over the modeled duration.</td><td>kg</td></tr>
+                <tr><td><code>t_release</code></td><td>Release duration.</td><td>s</td></tr>
+                <tr><td><code>m_inventory</code></td><td>Available inventory that caps the release.</td><td>kg</td></tr>
+                <tr><td><code>f_flash</code></td><td>Estimated flash fraction of the released liquid.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>cp_liquid</code></td><td>Liquid specific heat capacity.</td><td>J/(kg*K)</td></tr>
+                <tr><td><code>T_storage</code></td><td>Storage temperature before release.</td><td>K</td></tr>
+                <tr><td><code>T_boil</code></td><td>Boiling temperature at the downstream pressure basis.</td><td>K</td></tr>
+                <tr><td><code>DeltaH_vap</code></td><td>Latent heat of vaporization.</td><td>J/kg</td></tr>
+                <tr><td><code>A_pool</code></td><td>Estimated liquid pool surface area.</td><td>m^2</td></tr>
+                <tr><td><code>m_liquid</code></td><td>Mass of liquid available to form the pool.</td><td>kg</td></tr>
+                <tr><td><code>thickness</code></td><td>Assumed average pool thickness.</td><td>m</td></tr>
+                <tr><td><code>spreading_factor</code></td><td>Empirical factor representing spreading tendency or containment effects.</td><td>dimensionless</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="dispersion">
@@ -275,10 +412,17 @@ A_pool = m_liquid / (rho * thickness) * spreading_factor</pre>
               release interpretation.
             </p>
             <div class="equation-panel">
-              <pre>Gaussian plume
-C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
-  * exp(-y^2 / (2 * sigma_y^2))
-  * [exp(-(z-H)^2 / (2 * sigma_z^2)) + exp(-(z+H)^2 / (2 * sigma_z^2))]</pre>
+              <div class="formula-block">
+                <p class="formula-title">Gaussian plume</p>
+                \[
+                C = \frac{\dot{Q}}{2 \pi u \sigma_y \sigma_z}
+                \exp\!\left(-\frac{y^2}{2\sigma_y^2}\right)
+                \left[
+                \exp\!\left(-\frac{(z-H)^2}{2\sigma_z^2}\right) +
+                \exp\!\left(-\frac{(z+H)^2}{2\sigma_z^2}\right)
+                \right]
+                \]
+              </div>
             </div>
             <table class="reference-table">
               <thead>
@@ -317,23 +461,74 @@ C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>Gaussian plume
-C = Q_dot / (2 * pi * u * sigma_y * sigma_z)
-  * exp(-y^2 / (2 * sigma_y^2))
-  * [exp(-(z-H)^2 / (2 * sigma_z^2)) + exp(-(z+H)^2 / (2 * sigma_z^2))]
-
-Gaussian puff screening
-C = M / ((2 * pi)^(3/2) * sigma_y^2 * sigma_z)
-  * exp(-0.5 * [(y / sigma_y)^2 + (z / sigma_z)^2])
-
-Dense-gas map screening
-C(x,y) ~= M_release / (R_cloud * L_cloud)
-  * exp(-(abs(y)/R_cloud)^2)
-  * exp(-(x/L_cloud)^2)
-
-Mitigated release
-m_dot_revised = m_dot * (1 - mitigation_factor)</pre>
+              <div class="formula-block">
+                <p class="formula-title">Gaussian plume</p>
+                \[
+                C = \frac{\dot{Q}}{2 \pi u \sigma_y \sigma_z}
+                \exp\!\left(-\frac{y^2}{2\sigma_y^2}\right)
+                \left[
+                \exp\!\left(-\frac{(z-H)^2}{2\sigma_z^2}\right) +
+                \exp\!\left(-\frac{(z+H)^2}{2\sigma_z^2}\right)
+                \right]
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Gaussian puff screening</p>
+                \[
+                C = \frac{M}{(2\pi)^{3/2} \sigma_y^2 \sigma_z}
+                \exp\!\left[
+                -\frac{1}{2}
+                \left(
+                \frac{y^2}{\sigma_y^2} + \frac{z^2}{\sigma_z^2}
+                \right)
+                \right]
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Dense-gas map screening</p>
+                \[
+                C(x,y) \approx \frac{M_{\mathrm{release}}}{R_{\mathrm{cloud}} L_{\mathrm{cloud}}}
+                \exp\!\left[-\left(\frac{|y|}{R_{\mathrm{cloud}}}\right)^2\right]
+                \exp\!\left[-\left(\frac{x}{L_{\mathrm{cloud}}}\right)^2\right]
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Mitigated release</p>
+                \[
+                \dot{m}_{\mathrm{revised}} = \dot{m}\left(1-\mathrm{mitigation\_factor}\right)
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>C</code></td><td>Predicted airborne concentration at the receptor or map location.</td><td>kg/m^3 or mg/m^3, consistent with the source term</td></tr>
+                <tr><td><code>Q_dot</code></td><td>Continuous emission rate used by the plume model.</td><td>kg/s</td></tr>
+                <tr><td><code>u</code></td><td>Mean wind speed at the release height.</td><td>m/s</td></tr>
+                <tr><td><code>sigma_y</code></td><td>Lateral dispersion parameter.</td><td>m</td></tr>
+                <tr><td><code>sigma_z</code></td><td>Vertical dispersion parameter.</td><td>m</td></tr>
+                <tr><td><code>y</code></td><td>Crosswind offset from the plume centerline.</td><td>m</td></tr>
+                <tr><td><code>z</code></td><td>Vertical receptor elevation above ground.</td><td>m</td></tr>
+                <tr><td><code>H</code></td><td>Effective release height, including physical and plume-rise effects if modeled.</td><td>m</td></tr>
+                <tr><td><code>M</code></td><td>Total mass instantaneously released for the puff model.</td><td>kg</td></tr>
+                <tr><td><code>x</code></td><td>Downwind distance from the release point.</td><td>m</td></tr>
+                <tr><td><code>R_cloud</code></td><td>Characteristic lateral spread radius for the dense-gas cloud screen.</td><td>m</td></tr>
+                <tr><td><code>L_cloud</code></td><td>Characteristic downwind cloud length scale for the dense-gas screen.</td><td>m</td></tr>
+                <tr><td><code>M_release</code></td><td>Total mass available to the dense-gas cloud.</td><td>kg</td></tr>
+                <tr><td><code>m_dot_revised</code></td><td>Release rate after prevention or mitigation credit is applied.</td><td>kg/s</td></tr>
+                <tr><td><code>m_dot</code></td><td>Original or unmitigated release rate.</td><td>kg/s</td></tr>
+                <tr><td><code>mitigation_factor</code></td><td>Fractional reduction credited to a mitigation measure.</td><td>dimensionless fraction between 0 and 1</td></tr>
+                <tr><td><code>pi</code></td><td>Geometric constant from the Gaussian normalization term.</td><td>dimensionless</td></tr>
+                <tr><td><code>exp(...)</code></td><td>Exponential attenuation term used to represent Gaussian spread in space.</td><td>dimensionless function</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="fire-explosion">
@@ -346,8 +541,12 @@ m_dot_revised = m_dot * (1 - mitigation_factor)</pre>
               damage calculations without collapsing everything into one call.
             </p>
             <div class="equation-panel">
-              <pre>Thermal radiation
-q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
+              <div class="formula-block">
+                <p class="formula-title">Thermal radiation</p>
+                \[
+                q = \frac{\tau_a \chi_r \dot{m} \Delta H_c}{4 \pi r^2}
+                \]
+              </div>
             </div>
             <table class="reference-table">
               <thead>
@@ -376,28 +575,92 @@ q = tau_a * chi_r * m_dot * DeltaH_c / (4 * pi * r^2)</pre>
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>Jet or pool fire radiation
-q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)
-
-Pool burning rate
-m_dot_pool = A_pool * m''_burn
-
-Fireball diameter and duration screening
-D_fb = 5.8 * m_fuel^0.325
-t_fb = 0.45 * m_fuel^0.26
-
-TNT equivalency
-W_TNT = m_fuel * DeltaH_c * eta / DeltaH_TNT
-
-Scaled distance
-Z = R / W_TNT^(1/3)
-
-Overpressure screening
-P = 1772 / Z^3 + 114 / Z^2 + 10.4 / Z
-
-VCE yield factor screening
-eta_vce = min(0.3, 0.03 + 0.005 * t_delay + 0.05 * congestion)</pre>
+              <div class="formula-block">
+                <p class="formula-title">Jet or pool fire radiation</p>
+                \[
+                q = \frac{\chi_r \dot{m} \Delta H_c}{4 \pi r^2}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Pool burning rate</p>
+                \[
+                \dot{m}_{\mathrm{pool}} = A_{\mathrm{pool}} m^{\prime\prime}_{\mathrm{burn}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Fireball diameter and duration screening</p>
+                \[
+                D_{\mathrm{fb}} = 5.8 \, m_{\mathrm{fuel}}^{0.325}
+                \qquad
+                t_{\mathrm{fb}} = 0.45 \, m_{\mathrm{fuel}}^{0.26}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">TNT equivalency</p>
+                \[
+                W_{\mathrm{TNT}} = \frac{m_{\mathrm{fuel}} \Delta H_c \eta}{\Delta H_{\mathrm{TNT}}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Scaled distance</p>
+                \[
+                Z = \frac{R}{W_{\mathrm{TNT}}^{1/3}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Overpressure screening</p>
+                \[
+                P = \frac{1772}{Z^3} + \frac{114}{Z^2} + \frac{10.4}{Z}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">VCE yield factor screening</p>
+                \[
+                \eta_{\mathrm{vce}} = \min \left(0.3,\; 0.03 + 0.005 t_{\mathrm{delay}} + 0.05 \, \mathrm{congestion} \right)
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol or coefficient</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>q</code></td><td>Incident thermal radiation or heat flux at the receptor.</td><td>kW/m^2 or W/m^2, consistent with <code>DeltaH_c</code></td></tr>
+                <tr><td><code>tau_a</code></td><td>Atmospheric transmissivity between flame and receptor.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>chi_r</code></td><td>Radiative fraction of the combustion energy release.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>m_dot</code></td><td>Burning or release mass rate feeding the fire model.</td><td>kg/s</td></tr>
+                <tr><td><code>DeltaH_c</code></td><td>Heat of combustion of the fuel.</td><td>kJ/kg or J/kg, consistent with the selected heat-flux unit basis</td></tr>
+                <tr><td><code>r</code></td><td>Distance from flame center or source to receptor.</td><td>m</td></tr>
+                <tr><td><code>A_pool</code></td><td>Pool surface area contributing to burning.</td><td>m^2</td></tr>
+                <tr><td><code>m''_burn</code></td><td>Pool burning flux, meaning mass burned per unit area per unit time.</td><td>kg/(m^2*s)</td></tr>
+                <tr><td><code>D_fb</code></td><td>Estimated fireball diameter.</td><td>m</td></tr>
+                <tr><td><code>t_fb</code></td><td>Estimated fireball duration.</td><td>s</td></tr>
+                <tr><td><code>m_fuel</code></td><td>Mass of fuel participating in the fireball or explosion screen.</td><td>kg</td></tr>
+                <tr><td><code>5.8</code></td><td>Empirical fireball diameter coefficient for the current screening correlation.</td><td>m/kg^0.325</td></tr>
+                <tr><td><code>0.325</code></td><td>Empirical exponent relating fuel mass to fireball diameter.</td><td>dimensionless exponent</td></tr>
+                <tr><td><code>0.45</code></td><td>Empirical fireball duration coefficient for the current screening correlation.</td><td>s/kg^0.26</td></tr>
+                <tr><td><code>0.26</code></td><td>Empirical exponent relating fuel mass to fireball duration.</td><td>dimensionless exponent</td></tr>
+                <tr><td><code>W_TNT</code></td><td>Equivalent TNT mass for blast estimation.</td><td>kg TNT equivalent</td></tr>
+                <tr><td><code>eta</code></td><td>Explosion yield efficiency used to convert fuel energy to blast energy.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>DeltaH_TNT</code></td><td>Reference specific energy of TNT.</td><td>kJ/kg or J/kg</td></tr>
+                <tr><td><code>Z</code></td><td>Sachs scaled distance.</td><td>m/kg^(1/3)</td></tr>
+                <tr><td><code>R</code></td><td>Stand-off distance from the explosion center.</td><td>m</td></tr>
+                <tr><td><code>P</code></td><td>Peak overpressure predicted by the screening correlation.</td><td>kPa in the current fitted form</td></tr>
+                <tr><td><code>1772</code>, <code>114</code>, <code>10.4</code></td><td>Empirical blast-fit coefficients used with the current scaled-distance overpressure screen.</td><td>chosen so that <code>P</code> is returned in kPa when <code>Z</code> is in m/kg^(1/3)</td></tr>
+                <tr><td><code>eta_vce</code></td><td>Estimated vapor-cloud-explosion yield factor.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>0.3</code></td><td>Upper cap on the screening VCE yield factor.</td><td>dimensionless</td></tr>
+                <tr><td><code>0.03</code></td><td>Base VCE yield factor before delay and congestion adjustments.</td><td>dimensionless</td></tr>
+                <tr><td><code>0.005</code></td><td>Ignition-delay sensitivity coefficient in the VCE yield screen.</td><td>1/s</td></tr>
+                <tr><td><code>t_delay</code></td><td>Ignition delay between release and ignition.</td><td>s</td></tr>
+                <tr><td><code>0.05</code></td><td>Congestion sensitivity coefficient in the VCE yield screen.</td><td>dimensionless per congestion unit</td></tr>
+                <tr><td><code>congestion</code></td><td>Congestion severity factor representing obstructed geometry within the flammable cloud.</td><td>dimensionless</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="effects">
@@ -437,27 +700,68 @@ eta_vce = min(0.3, 0.03 + 0.005 * t_delay + 0.05 * congestion)</pre>
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>Toxic load
-L_toxic = C^n * t
-
-Toxic probit
-Y = a + b * ln(L_toxic)
-
-Thermal load
-L_thermal = q^(4/3) * t
-
-Thermal probit
-Y = a + b * ln(L_thermal)
-
-Explosion probit
-Y = a + b * ln(P_pa)
-
-Probability from probit
-Pr(response) = 0.5 * [1 + erf((Y - 5) / sqrt(2))]
-
-Expected cases
-E[cases] = population * Pr(response)</pre>
+              <div class="formula-block">
+                <p class="formula-title">Toxic load and toxic probit</p>
+                \[
+                L_{\mathrm{toxic}} = C^n t
+                \qquad
+                Y = a + b \ln\!\left(L_{\mathrm{toxic}}\right)
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Thermal load and thermal probit</p>
+                \[
+                L_{\mathrm{thermal}} = q^{4/3} t
+                \qquad
+                Y = a + b \ln\!\left(L_{\mathrm{thermal}}\right)
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Explosion probit</p>
+                \[
+                Y = a + b \ln\!\left(P_{\mathrm{pa}}\right)
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Probability from probit</p>
+                \[
+                \Pr(\mathrm{response}) = \frac{1}{2}\left[1 + \operatorname{erf}\!\left(\frac{Y-5}{\sqrt{2}}\right)\right]
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Expected cases</p>
+                \[
+                E[\mathrm{cases}] = \mathrm{population} \cdot \Pr(\mathrm{response})
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol or coefficient</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>L_toxic</code></td><td>Toxic dose load used by the selected toxic probit model.</td><td>concentration^<code>n</code> * time, matching the source correlation</td></tr>
+                <tr><td><code>C</code></td><td>Airborne toxic concentration at the receptor.</td><td>ppm, mg/m^3, or the unit required by the selected correlation</td></tr>
+                <tr><td><code>n</code></td><td>Empirical concentration exponent governing how toxicity scales with concentration.</td><td>dimensionless exponent</td></tr>
+                <tr><td><code>t</code></td><td>Exposure duration.</td><td>s or min, matching the source correlation</td></tr>
+                <tr><td><code>Y</code></td><td>Probit value before conversion to response probability.</td><td>dimensionless</td></tr>
+                <tr><td><code>a</code></td><td>Empirical probit intercept from the selected toxic, thermal, or explosion response dataset.</td><td>dimensionless</td></tr>
+                <tr><td><code>b</code></td><td>Empirical probit slope multiplying the natural logarithm of the dose variable.</td><td>dimensionless when dose units match the correlation source</td></tr>
+                <tr><td><code>L_thermal</code></td><td>Thermal dose load used by the thermal probit relation.</td><td>(kW/m^2)^(4/3) * s or the equivalent chosen basis</td></tr>
+                <tr><td><code>q</code></td><td>Incident thermal radiation at the receptor.</td><td>kW/m^2</td></tr>
+                <tr><td><code>P_pa</code></td><td>Overpressure expressed in pascals for the explosion probit relation.</td><td>Pa</td></tr>
+                <tr><td><code>Pr(response)</code></td><td>Predicted response probability, such as fatality or injury probability.</td><td>dimensionless fraction between 0 and 1</td></tr>
+                <tr><td><code>5</code></td><td>Standard median probit value corresponding to 50 percent response.</td><td>dimensionless</td></tr>
+                <tr><td><code>sqrt(2)</code></td><td>Normalization constant from the normal-distribution transform used to convert probit to probability.</td><td>dimensionless</td></tr>
+                <tr><td><code>E[cases]</code></td><td>Expected number of affected people in the exposed population.</td><td>persons</td></tr>
+                <tr><td><code>population</code></td><td>Population count or equivalent represented by the exposure zone.</td><td>persons</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="prevention-relief">
@@ -501,27 +805,96 @@ E[cases] = population * Pr(response)</pre>
               </tbody>
             </table>
             <div class="equation-panel">
-              <pre>Purge gas requirement screening
-V_purge = V_vessel * cycles / purity
-
-Liquid relief sizing
-A_relief = m_dot / (C_d * sqrt(2 * rho * DeltaP))
-
-Gas or vapor relief sizing
-A_relief = m_dot / [C_d * P_set * sqrt(k / (R_specific * T) * (2/(k+1))^((k+1)/(k-1)))]
-
-Two-phase relief screening
-A_relief = m_dot / (25 * sqrt(quality + 0.1))
-
-External fire relief screening
-A_relief = wetted_area * 2.5e-5
-
-Thermal expansion relief screening
-A_relief = V_blocked * beta * DeltaT * 1e-4
-
-Deflagration vent screening
-A_vent = V_enclosure^(2/3) * [K / (Pmax * Pred)] * 0.1</pre>
+              <div class="formula-block">
+                <p class="formula-title">Purge gas requirement screening</p>
+                \[
+                V_{\mathrm{purge}} = \frac{V_{\mathrm{vessel}} \cdot \mathrm{cycles}}{\mathrm{purity}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Liquid relief sizing</p>
+                \[
+                A_{\mathrm{relief}} = \frac{\dot{m}}{C_d \sqrt{2 \rho \Delta P}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Gas or vapor relief sizing</p>
+                \[
+                A_{\mathrm{relief}} =
+                \frac{\dot{m}}
+                {C_d P_{\mathrm{set}}
+                \sqrt{
+                \frac{k}{R_{\mathrm{specific}} T}
+                \left(\frac{2}{k+1}\right)^{\frac{k+1}{k-1}}
+                }}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Two-phase relief screening</p>
+                \[
+                A_{\mathrm{relief}} = \frac{\dot{m}}{25 \sqrt{\mathrm{quality} + 0.1}}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">External fire relief screening</p>
+                \[
+                A_{\mathrm{relief}} = \mathrm{wetted\_area} \cdot 2.5 \times 10^{-5}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Thermal expansion relief screening</p>
+                \[
+                A_{\mathrm{relief}} = V_{\mathrm{blocked}} \beta \Delta T \cdot 10^{-4}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Deflagration vent screening</p>
+                \[
+                A_{\mathrm{vent}} = V_{\mathrm{enclosure}}^{2/3}
+                \left[\frac{K}{P_{\max} P_{\mathrm{red}}}\right] \cdot 0.1
+                \]
+              </div>
             </div>
+            <h3>Symbol meaning and units</h3>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Symbol or coefficient</th>
+                  <th>Meaning</th>
+                  <th>Expected unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>V_purge</code></td><td>Total purge gas volume required.</td><td>m^3</td></tr>
+                <tr><td><code>V_vessel</code></td><td>Internal free volume of the vessel being purged.</td><td>m^3</td></tr>
+                <tr><td><code>cycles</code></td><td>Number of complete gas-exchange cycles assumed by the purge strategy.</td><td>dimensionless</td></tr>
+                <tr><td><code>purity</code></td><td>Target inert-gas purity or displacement effectiveness expressed as a fraction.</td><td>dimensionless fraction between 0 and 1</td></tr>
+                <tr><td><code>A_relief</code></td><td>Required relief flow area.</td><td>m^2</td></tr>
+                <tr><td><code>m_dot</code></td><td>Mass rate that must be discharged through the relief path.</td><td>kg/s</td></tr>
+                <tr><td><code>C_d</code></td><td>Relief-device discharge coefficient.</td><td>dimensionless</td></tr>
+                <tr><td><code>rho</code></td><td>Liquid density for liquid relief sizing.</td><td>kg/m^3</td></tr>
+                <tr><td><code>DeltaP</code></td><td>Pressure drop available across the relief device.</td><td>Pa</td></tr>
+                <tr><td><code>P_set</code></td><td>Relief valve set pressure or upstream relieving pressure basis.</td><td>Pa</td></tr>
+                <tr><td><code>k</code></td><td>Ratio of specific heats for gas or vapor relief sizing.</td><td>dimensionless</td></tr>
+                <tr><td><code>R_specific</code></td><td>Specific gas constant of the relieved fluid.</td><td>J/(kg*K)</td></tr>
+                <tr><td><code>T</code></td><td>Absolute relieving temperature.</td><td>K</td></tr>
+                <tr><td><code>quality</code></td><td>Vapor mass fraction used in the two-phase sizing screen.</td><td>dimensionless fraction</td></tr>
+                <tr><td><code>25</code></td><td>Empirical denominator coefficient in the current two-phase relief screening relation.</td><td>kg/(s*m^2) scaled to the adopted quality basis</td></tr>
+                <tr><td><code>0.1</code></td><td>Empirical offset preventing the two-phase quality term from collapsing to zero at very low quality.</td><td>dimensionless</td></tr>
+                <tr><td><code>wetted_area</code></td><td>Externally heated vessel area exposed to the fire.</td><td>m^2</td></tr>
+                <tr><td><code>2.5e-5</code></td><td>Empirical external-fire relief area coefficient used by the current screening model.</td><td>m^2 relief area per m^2 wetted area</td></tr>
+                <tr><td><code>V_blocked</code></td><td>Blocked-in liquid volume subject to thermal expansion.</td><td>m^3</td></tr>
+                <tr><td><code>beta</code></td><td>Volumetric thermal expansion coefficient of the liquid.</td><td>1/K</td></tr>
+                <tr><td><code>DeltaT</code></td><td>Temperature increase applied to the blocked-in system.</td><td>K</td></tr>
+                <tr><td><code>1e-4</code></td><td>Empirical conversion coefficient used by the current thermal-expansion relief screen.</td><td>m^2/m^3</td></tr>
+                <tr><td><code>A_vent</code></td><td>Required deflagration vent area.</td><td>m^2</td></tr>
+                <tr><td><code>V_enclosure</code></td><td>Enclosure volume subject to deflagration venting.</td><td>m^3</td></tr>
+                <tr><td><code>K</code></td><td>Vent sizing severity coefficient representing enclosure and fuel reactivity effects.</td><td>model-specific coefficient</td></tr>
+                <tr><td><code>Pmax</code></td><td>Maximum explosion pressure for the vented deflagration basis.</td><td>bar(g) or kPa, consistent with the chosen venting standard basis</td></tr>
+                <tr><td><code>Pred</code></td><td>Reduced pressure target after venting.</td><td>same pressure unit as <code>Pmax</code></td></tr>
+                <tr><td><code>0.1</code> in <code>A_vent</code></td><td>Empirical scaling coefficient used by the current deflagration vent screening relation.</td><td>m^2/m^2 after the pressure term basis is applied</td></tr>
+              </tbody>
+            </table>
           </section>
 
           <section class="doc-section" id="hazard-evaluation">
@@ -819,50 +1192,109 @@ Sign analysis template
               in the user interface.
             </p>
             <div class="equation-panel">
-              <pre>Scenario and source terms
-A = pi * d^2 / 4
-v_liquid = C_d * sqrt(2 * g * h)
-v_pipe = C_d * sqrt(2 * DeltaP / rho)
-Q = A * v
-m_dot = rho * Q
-m_total = min(m_dot * t_release, m_inventory)
-f_flash = cp_liquid * (T_storage - T_boil) / DeltaH_vap
-A_pool = m_liquid / (rho * thickness) * spreading_factor
-
-Gas release
-m_dot_choked = C_d * A * P0 * sqrt(k / (Z * R * T0) * (2 / (k + 1))^((k + 1) / (k - 1)))
-m_dot_nonchoked = C_d * A * P0 * sqrt((2 * k)/(Z * R * T0 * (k - 1)) * [r^(2/k) - r^((k+1)/k)])
-
-Dispersion
-C_plume = Q_dot / (2 * pi * u * sigma_y * sigma_z) * exp(-y^2 / (2 * sigma_y^2)) * image_term
-C_puff = M / ((2 * pi)^(3/2) * sigma_y^2 * sigma_z) * exp(-0.5 * [(y / sigma_y)^2 + (z / sigma_z)^2])
-C_dense ~= M_release / (R_cloud * L_cloud) * exp(-(abs(y)/R_cloud)^2) * exp(-(x/L_cloud)^2)
-
-Fire and explosion
-q = chi_r * m_dot * DeltaH_c / (4 * pi * r^2)
-m_dot_pool = A_pool * m''_burn
-D_fb = 5.8 * m_fuel^0.325
-t_fb = 0.45 * m_fuel^0.26
-W_TNT = m_fuel * DeltaH_c * eta / DeltaH_TNT
-Z = R / W_TNT^(1/3)
-P = 1772 / Z^3 + 114 / Z^2 + 10.4 / Z
-
-Effects and exposure
-C_mg/m3 = C_ppm * MW * P / (R_atm * T) * 10^-3
-TWA = sum(C_i * t_i) / sum(t_i)
-Y = a + b * ln(C^n * t)
-Y = a + b * ln(q^(4/3) * t)
-Y = a + b * ln(P_pa)
-Pr(response) = 0.5 * [1 + erf((Y - 5) / sqrt(2))]
-E[cases] = population * Pr(response)
-
-Relief and prevention
-V_purge = V_vessel * cycles / purity
-A_relief_liquid = m_dot / (C_d * sqrt(2 * rho * DeltaP))
-A_relief_gas = m_dot / [C_d * P_set * sqrt(k / (R_specific * T) * (2/(k+1))^((k+1)/(k-1)))]
-A_relief_two_phase = m_dot / (25 * sqrt(quality + 0.1))
-A_vent = V_enclosure^(2/3) * [K / (Pmax * Pred)] * 0.1</pre>
+              <div class="formula-block">
+                <p class="formula-title">Scenario and source terms</p>
+                \[
+                \begin{aligned}
+                A &= \frac{\pi d^2}{4} \\
+                v_{\mathrm{liquid}} &= C_d \sqrt{2gh} \\
+                v_{\mathrm{pipe}} &= C_d \sqrt{\frac{2\Delta P}{\rho}} \\
+                Q &= Av \\
+                \dot{m} &= \rho Q \\
+                m_{\mathrm{total}} &= \min\!\left(\dot{m} t_{\mathrm{release}}, m_{\mathrm{inventory}}\right) \\
+                f_{\mathrm{flash}} &= \frac{c_{p,\mathrm{liquid}}(T_{\mathrm{storage}}-T_{\mathrm{boil}})}{\Delta H_{\mathrm{vap}}} \\
+                A_{\mathrm{pool}} &= \frac{m_{\mathrm{liquid}}}{\rho \, \mathrm{thickness}} \cdot \mathrm{spreading\_factor}
+                \end{aligned}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Gas release</p>
+                \[
+                \begin{aligned}
+                \dot{m}_{\mathrm{choked}} &=
+                C_d A P_0
+                \sqrt{
+                \frac{k}{ZRT_0}
+                \left(\frac{2}{k+1}\right)^{\frac{k+1}{k-1}}
+                } \\
+                \dot{m}_{\mathrm{nonchoked}} &=
+                C_d A P_0
+                \sqrt{
+                \frac{2k}{ZRT_0(k-1)}
+                \left[
+                r^{2/k} - r^{(k+1)/k}
+                \right]
+                }
+                \end{aligned}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Dispersion</p>
+                \[
+                \begin{aligned}
+                C_{\mathrm{plume}} &= \frac{\dot{Q}}{2\pi u \sigma_y \sigma_z}
+                \exp\!\left(-\frac{y^2}{2\sigma_y^2}\right)\mathrm{image\_term} \\
+                C_{\mathrm{puff}} &= \frac{M}{(2\pi)^{3/2}\sigma_y^2\sigma_z}
+                \exp\!\left[-\frac{1}{2}\left(\frac{y^2}{\sigma_y^2}+\frac{z^2}{\sigma_z^2}\right)\right] \\
+                C_{\mathrm{dense}} &\approx \frac{M_{\mathrm{release}}}{R_{\mathrm{cloud}}L_{\mathrm{cloud}}}
+                \exp\!\left[-\left(\frac{|y|}{R_{\mathrm{cloud}}}\right)^2\right]
+                \exp\!\left[-\left(\frac{x}{L_{\mathrm{cloud}}}\right)^2\right]
+                \end{aligned}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Fire and explosion</p>
+                \[
+                \begin{aligned}
+                q &= \frac{\chi_r \dot{m}\Delta H_c}{4\pi r^2} \\
+                \dot{m}_{\mathrm{pool}} &= A_{\mathrm{pool}} m^{\prime\prime}_{\mathrm{burn}} \\
+                D_{\mathrm{fb}} &= 5.8\,m_{\mathrm{fuel}}^{0.325} \\
+                t_{\mathrm{fb}} &= 0.45\,m_{\mathrm{fuel}}^{0.26} \\
+                W_{\mathrm{TNT}} &= \frac{m_{\mathrm{fuel}}\Delta H_c \eta}{\Delta H_{\mathrm{TNT}}} \\
+                Z &= \frac{R}{W_{\mathrm{TNT}}^{1/3}} \\
+                P &= \frac{1772}{Z^3} + \frac{114}{Z^2} + \frac{10.4}{Z}
+                \end{aligned}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Effects and exposure</p>
+                \[
+                \begin{aligned}
+                C_{\mathrm{mg/m^3}} &= C_{\mathrm{ppm}} MW \frac{P}{R_{\mathrm{atm}}T}10^{-3} \\
+                \mathrm{TWA} &= \frac{\sum_i C_i t_i}{\sum_i t_i} \\
+                Y &= a + b\ln(C^n t) \\
+                Y &= a + b\ln(q^{4/3} t) \\
+                Y &= a + b\ln(P_{\mathrm{pa}}) \\
+                \Pr(\mathrm{response}) &= \frac{1}{2}\left[1+\operatorname{erf}\!\left(\frac{Y-5}{\sqrt{2}}\right)\right] \\
+                E[\mathrm{cases}] &= \mathrm{population}\cdot\Pr(\mathrm{response})
+                \end{aligned}
+                \]
+              </div>
+              <div class="formula-block">
+                <p class="formula-title">Relief and prevention</p>
+                \[
+                \begin{aligned}
+                V_{\mathrm{purge}} &= \frac{V_{\mathrm{vessel}}\cdot\mathrm{cycles}}{\mathrm{purity}} \\
+                A_{\mathrm{relief,liquid}} &= \frac{\dot{m}}{C_d\sqrt{2\rho\Delta P}} \\
+                A_{\mathrm{relief,gas}} &=
+                \frac{\dot{m}}
+                {C_d P_{\mathrm{set}}
+                \sqrt{
+                \frac{k}{R_{\mathrm{specific}}T}
+                \left(\frac{2}{k+1}\right)^{\frac{k+1}{k-1}}
+                }} \\
+                A_{\mathrm{relief,two\mathchar`-phase}} &= \frac{\dot{m}}{25\sqrt{\mathrm{quality}+0.1}} \\
+                A_{\mathrm{vent}} &= V_{\mathrm{enclosure}}^{2/3}\left[\frac{K}{P_{\max}P_{\mathrm{red}}}\right]\cdot 0.1
+                \end{aligned}
+                \]
+              </div>
             </div>
+            <p class="section-intro">
+              The symbol definitions above apply to these summary formulas as
+              well. In practice, the API expects request payloads to use the
+              units listed in the symbol tables for each module section so the
+              fitted coefficients and empirical constants remain unambiguous.
+            </p>
           </section>
 
           <section class="doc-section" id="constants">

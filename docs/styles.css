@@ -710,6 +710,7 @@ th {
   border-radius: 14px;
   background: #f6f6f4;
   padding: 14px 16px;
+  overflow-x: auto;
 }
 
 .equation-panel pre {
@@ -717,6 +718,25 @@ th {
   white-space: pre-wrap;
   line-height: 1.6;
   color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.9rem;
+}
+
+.formula-block + .formula-block {
+  margin-top: 18px;
+}
+
+.formula-title {
+  margin: 0 0 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.equation-panel .mjx-container {
+  margin: 0 !important;
 }
 
 .doc-tabs {
