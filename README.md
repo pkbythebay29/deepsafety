@@ -213,6 +213,31 @@ docker run --rm -p 8000:8000 deepsafety
 docker compose up --build
 ```
 
+## CI/CD and PyPI Publishing
+
+Deep Safety now publishes through GitHub Actions:
+
+- `CI` workflow:
+  - runs tests
+  - builds `sdist` and `wheel`
+  - runs `twine check` on artifacts
+- `Publish PyPI` workflow (`.github/workflows/publish-pypi.yml`):
+  - triggers on tags matching `v*` and on manual dispatch
+  - reruns tests and package checks before publish
+  - publishes artifacts to PyPI
+
+Required repository configuration:
+
+- Add `PYPI_API_TOKEN` in repository secrets
+- Configure a `pypi` environment in GitHub (recommended for protected release approvals)
+
+Release flow:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
 ## MCP
 
 `deepsafety-mcp` exposes Deep Safety operations for tool-driven and agent-driven workflows against the same API model chain.
