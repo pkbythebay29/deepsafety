@@ -194,6 +194,7 @@ GIS, visualization, and sign analysis:
 
 ## Notebook Entry Points
 
+- `notebooks/all_endpoints_tutorial_workbook.ipynb`
 - `notebooks/deepsafety_explorer.ipynb`
 - `notebooks/buncefield_tutorial.ipynb`
 - `notebooks/csb_incident_tutorial.ipynb`
