@@ -10,7 +10,7 @@ import httpx
 
 API_BASE = os.environ.get("DEEPSAFETY_API_BASE", "http://127.0.0.1:8000").rstrip("/")
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "deepsafety-mcp", "version": "1.0.0"}
+SERVER_INFO = {"name": "deepsafety-mcp", "version": "1.0.1"}
 
 
 TOOLS = [

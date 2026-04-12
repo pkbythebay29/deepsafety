@@ -1,5 +1,24 @@
 # Release Notes
 
+## 1.0.1
+
+This release reconciles the published package with the latest repository state and activates automated PyPI release publishing through GitHub Actions.
+
+### Added
+
+- GitHub Actions workflow for PyPI publishing on `v*` tags and manual dispatch (`publish-pypi.yml`)
+- CI artifact validation with `python -m build` and `twine check`
+- New tutorial notebooks:
+  - `notebooks/buncefield_tutorial.ipynb`
+  - `notebooks/csb_incident_tutorial.ipynb`
+
+### Changed
+
+- Documentation and landing pages now position Deep Safety as a foundational, physics-driven integration layer
+- API reference expanded with POST endpoint contract tables and JSON templates
+- App impact display now uses consequence rings (severe, primary, awareness)
+- Removed remaining references to Crowl/Louvar naming in API metadata
+
 ## 1.0.0
 
 Deep Safety 1.0.0 aligns the Python package and FastAPI service around the expanded OpenAPI contract and the physical modeling chain used by the project.

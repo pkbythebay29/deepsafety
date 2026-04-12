@@ -3,7 +3,7 @@ from deepsafety.client import DeepSafetyClient
 from deepsafety.scenario_engine import build_scenario_definition
 from deepsafety.source_models import solve_source_model
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = [
     "app",
