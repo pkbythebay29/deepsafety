@@ -176,3 +176,18 @@ class DeepSafetyClient:
 
     def get_impact_zones(self, payload: dict[str, Any]) -> Any:
         return self._request("POST", "/gis/impact-zones", payload)
+
+    def list_pipeline_routes(self) -> Any:
+        return self._request("GET", "/gis/pipeline-routes")
+
+    def create_pipeline_route(self, payload: dict[str, Any]) -> Any:
+        return self._request("POST", "/gis/pipeline-routes", payload)
+
+    def get_pipeline_route(self, route_id: str) -> Any:
+        return self._request("GET", f"/gis/pipeline-routes/{route_id}")
+
+    def evaluate_pipeline_route(self, route_id: str, payload: dict[str, Any]) -> Any:
+        return self._request("POST", f"/gis/pipeline-routes/{route_id}/evaluate", payload)
+
+    def get_pipeline_route_impact_zones(self, route_id: str, payload: dict[str, Any]) -> Any:
+        return self._request("POST", f"/gis/pipeline-routes/{route_id}/impact-zones", payload)

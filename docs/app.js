@@ -10,6 +10,7 @@ const scenarioFields = document.getElementById("scenarioFields");
 const constantOverrides = document.getElementById("constantOverrides");
 const runScenarioButton = document.getElementById("runScenario");
 const runImpactZonesButton = document.getElementById("runImpactZones");
+const pipelineModeButton = document.getElementById("pipelineMode");
 const sourceModeButton = document.getElementById("sourceMode");
 const receptorModeButton = document.getElementById("receptorMode");
 const resetMapButton = document.getElementById("resetMap");
@@ -23,9 +24,13 @@ const storedApiBase =
 apiBaseInput.value = storedApiBase;
 
 const state = {
-  mapMode: "source",
+  mapMode: "pipeline",
   source: null,
   sourceMarker: null,
+  pipelinePoints: [],
+  pipelineMarkers: [],
+  pipelineLayer: null,
+  pipelineRouteId: null,
   receptorMarkers: [],
   zoneLayers: [],
   overlayLayer: null,
@@ -176,14 +181,22 @@ function clearZoneLayers() {
 
 function resetMapState() {
   state.source = null;
+  state.pipelineRouteId = null;
   if (state.sourceMarker) {
     map.removeLayer(state.sourceMarker);
     state.sourceMarker = null;
   }
+  state.pipelineMarkers.forEach((marker) => map.removeLayer(marker));
+  state.pipelineMarkers = [];
+  state.pipelinePoints = [];
+  if (state.pipelineLayer) {
+    map.removeLayer(state.pipelineLayer);
+    state.pipelineLayer = null;
+  }
   state.receptorMarkers.forEach((marker) => map.removeLayer(marker));
   state.receptorMarkers = [];
   clearZoneLayers();
-  setStatus("Map reset. Place a source pin to begin.");
+  setStatus("Map reset. Draw a pipeline route or place a source pin to begin.");
 }
 
 function addReceptorMarker(latlng) {
@@ -198,7 +211,43 @@ function addReceptorMarker(latlng) {
   state.receptorMarkers.push(marker);
 }
 
+function redrawPipeline() {
+  if (state.pipelineLayer) {
+    map.removeLayer(state.pipelineLayer);
+    state.pipelineLayer = null;
+  }
+  if (state.pipelinePoints.length >= 2) {
+    state.pipelineLayer = L.polyline(state.pipelinePoints, {
+      color: "#143642",
+      weight: 4,
+      dashArray: "10 8",
+    }).addTo(map);
+    state.pipelineLayer.bindTooltip("Pipeline route", { sticky: true });
+  }
+}
+
+function addPipelinePoint(latlng) {
+  const marker = L.circleMarker(latlng, {
+    radius: 6,
+    weight: 2,
+    color: "#143642",
+    fillColor: "#2a9d8f",
+    fillOpacity: 0.9,
+  }).addTo(map);
+  marker.bindPopup(`Route point ${state.pipelinePoints.length + 1}`);
+  state.pipelineMarkers.push(marker);
+  state.pipelinePoints.push(latlng);
+  state.pipelineRouteId = null;
+  redrawPipeline();
+}
+
 map.on("click", (event) => {
+  if (state.mapMode === "pipeline") {
+    clearZoneLayers();
+    addPipelinePoint(event.latlng);
+    setStatus(`Added pipeline point ${state.pipelinePoints.length}. Place at least two points, then switch to source mode.`);
+    return;
+  }
   if (state.mapMode === "source") {
     if (state.sourceMarker) {
       map.removeLayer(state.sourceMarker);
@@ -206,8 +255,8 @@ map.on("click", (event) => {
     clearZoneLayers();
     state.source = event.latlng;
     state.sourceMarker = L.marker(event.latlng).addTo(map);
-    state.sourceMarker.bindPopup("Source").openPopup();
-    setStatus("Source set. Switch to receptor mode to add points or draw an impact circle.");
+    state.sourceMarker.bindPopup(state.pipelinePoints.length >= 2 ? "Pipeline release" : "Source").openPopup();
+    setStatus("Release source set. Switch to receptor mode to add points or run the scenario.");
     return;
   }
 
@@ -290,6 +339,30 @@ function receptorsPayload() {
   }));
 }
 
+async function ensurePipelineRoute() {
+  if (state.pipelinePoints.length < 2) {
+    return null;
+  }
+  if (state.pipelineRouteId) {
+    return state.pipelineRouteId;
+  }
+  const route = await fetchJson("/gis/pipeline-routes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Web App Pipeline Route",
+      description: "Drawn from the interactive map.",
+      points: state.pipelinePoints.map((point, index) => ({
+        latitude: point.lat,
+        longitude: point.lng,
+        label: `Route point ${index + 1}`,
+      })),
+    }),
+  });
+  state.pipelineRouteId = route.id;
+  return route.id;
+}
+
 function renderResultsMarkup(cards) {
   resultsContainer.innerHTML = cards.join("");
 }
@@ -360,6 +433,18 @@ async function renderModelDocs() {
 
 function renderZoneLayers(payload) {
   clearZoneLayers();
+  payload.geojson.features
+    .filter((feature) => feature.geometry.type === "LineString")
+    .forEach((feature) => {
+      const layer = L.geoJSON(feature, {
+        style: {
+          color: "#143642",
+          weight: 4,
+          dashArray: "10 8",
+        },
+      }).addTo(map);
+      state.zoneLayers.push(layer);
+    });
   const palette = ["#8b0000", "#ea6a47", "#ffb703", "#2a9d8f"];
   payload.geojson.features
     .filter((feature) => feature.geometry.type === "Polygon")
@@ -458,7 +543,12 @@ async function runScenario() {
       constants: parseConstants(),
     };
 
-    const result = await fetchJson("/gis/scenarios/evaluate", {
+    const pipelineRouteId =
+      scenarioTypeSelect.value === "leak" ? await ensurePipelineRoute() : null;
+    const scenarioPath = pipelineRouteId
+      ? `/gis/pipeline-routes/${pipelineRouteId}/evaluate`
+      : "/gis/scenarios/evaluate";
+    const result = await fetchJson(scenarioPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -535,7 +625,12 @@ async function runImpactZones() {
             constants: parseConstants(),
           };
 
-    const result = await fetchJson("/gis/impact-zones", {
+    const pipelineRouteId =
+      scenarioTypeSelect.value === "leak" ? await ensurePipelineRoute() : null;
+    const impactPath = pipelineRouteId
+      ? `/gis/pipeline-routes/${pipelineRouteId}/impact-zones`
+      : "/gis/impact-zones";
+    const result = await fetchJson(impactPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -651,9 +746,13 @@ scenarioTypeSelect.addEventListener("change", () => {
 modelIdSelect.addEventListener("change", renderModelDocs);
 runScenarioButton.addEventListener("click", runScenario);
 runImpactZonesButton.addEventListener("click", runImpactZones);
+pipelineModeButton.addEventListener("click", () => {
+  state.mapMode = "pipeline";
+  setStatus("Pipeline drawing mode enabled. Click along the route to sketch the pipeline.");
+});
 sourceModeButton.addEventListener("click", () => {
   state.mapMode = "source";
-  setStatus("Source placement mode enabled.");
+  setStatus("Source placement mode enabled. Click to place the release point.");
 });
 receptorModeButton.addEventListener("click", () => {
   state.mapMode = "receptor";
@@ -663,4 +762,4 @@ resetMapButton.addEventListener("click", resetMapState);
 
 renderScenarioFields();
 hydrateScenarioModels();
-setStatus("Place a source pin, configure the asset, or analyze a sign photo to seed a leak scenario.");
+setStatus("Draw a pipeline route or place a source pin, configure the asset, or analyze a sign photo to seed a leak scenario.");

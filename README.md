@@ -175,8 +175,13 @@ Prevention, reactivity, relief, hazard evaluation:
 GIS, visualization, and sign analysis:
 - `POST /visualization/solve`
 - `POST /signs/analyze`
+- `GET /gis/pipeline-routes`
+- `POST /gis/pipeline-routes`
+- `GET /gis/pipeline-routes/{route_id}`
 - `POST /gis/scenarios/evaluate`
 - `POST /gis/impact-zones`
+- `POST /gis/pipeline-routes/{route_id}/evaluate`
+- `POST /gis/pipeline-routes/{route_id}/impact-zones`
 
 ## GitHub Pages Structure
 
@@ -233,8 +238,8 @@ Required repository configuration:
 Release flow:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 ## MCP

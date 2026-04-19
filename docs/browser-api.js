@@ -280,6 +280,7 @@
       models: [summary(MODEL_DETAILS["fire.point_source_heat_flux"])],
     },
   };
+  const PIPELINE_ROUTES = new Map();
 
   const TEMPLATES = [
     {
@@ -1314,6 +1315,17 @@
     };
   }
 
+  function lineFeature(points, properties) {
+    return {
+      type: "Feature",
+      properties,
+      geometry: {
+        type: "LineString",
+        coordinates: points.map((point) => [point.longitude, point.latitude]),
+      },
+    };
+  }
+
   function circlePolygon(latitude, longitude, radiusM, properties) {
     const coordinates = [];
     const earthRadius = 6371000;
@@ -1337,6 +1349,256 @@
       type: "Feature",
       properties,
       geometry: { type: "Polygon", coordinates: [coordinates] },
+    };
+  }
+
+  function createPipelineRouteRecord(payload) {
+    const points = (payload.points ?? []).map((point, index) => ({
+      latitude: Number(point.latitude),
+      longitude: Number(point.longitude),
+      label: point.label || null,
+      sequence: index + 1,
+    }));
+    if (points.length < 2) {
+      throw error("Pipeline route requires at least two GPS coordinates.");
+    }
+    const route = {
+      id: `pipe_${Math.random().toString(36).slice(2, 10)}`,
+      name: payload.name || "Pipeline route",
+      description: payload.description || null,
+      points,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    PIPELINE_ROUTES.set(route.id, route);
+    return route;
+  }
+
+  function projectPointToSegment(point, start, end) {
+    const latitudeScale = 111320;
+    let longitudeScale = 111320 * Math.cos((((start.latitude + end.latitude) / 2) * PI) / 180);
+    if (Math.abs(longitudeScale) < 1e-6) {
+      longitudeScale = 1e-6;
+    }
+    const px = point.longitude * longitudeScale;
+    const py = point.latitude * latitudeScale;
+    const ax = start.longitude * longitudeScale;
+    const ay = start.latitude * latitudeScale;
+    const bx = end.longitude * longitudeScale;
+    const by = end.latitude * latitudeScale;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const denominator = dx * dx + dy * dy;
+    if (denominator <= 0) {
+      return { latitude: start.latitude, longitude: start.longitude, label: point.label || null };
+    }
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / denominator));
+    return {
+      latitude: (ay + t * dy) / latitudeScale,
+      longitude: (ax + t * dx) / longitudeScale,
+      label: point.label || null,
+    };
+  }
+
+  function snapSourceToRoute(source, route) {
+    let bestPoint = null;
+    let bestDistance = Infinity;
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const candidate = projectPointToSegment(source, route.points[index], route.points[index + 1]);
+      const distance = haversineDistanceM(source.latitude, source.longitude, candidate.latitude, candidate.longitude);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestPoint = candidate;
+      }
+    }
+    return bestPoint || route.points[0];
+  }
+
+  function evaluateGisScenario(payload, pipelineRoute = null) {
+    const scenarioType = String(payload.scenario_type).toLowerCase();
+    const modelId = payload.model_id || SCENARIOS[scenarioType]?.default_model_id;
+    const model = MODEL_DETAILS[modelId];
+    if (!model) {
+      throw error("Model not found.", 404);
+    }
+    const source = payload.source;
+    const releasePoint = pipelineRoute ? snapSourceToRoute(source, pipelineRoute) : null;
+    const effectiveSource = releasePoint || source;
+    const receptors = payload.receptors ?? [];
+    const features = [
+      pointFeature(source.latitude, source.longitude, {
+        role: "source",
+        label: source.label || "Source",
+        scenario_type: scenarioType,
+      }),
+    ];
+    if (pipelineRoute) {
+      features.push(
+        lineFeature(pipelineRoute.points, {
+          role: "pipeline_route",
+          route_id: pipelineRoute.id,
+          label: pipelineRoute.name,
+        }),
+      );
+      features.push(
+        pointFeature(releasePoint.latitude, releasePoint.longitude, {
+          role: "release_point",
+          label: releasePoint.label || "Pipeline release",
+          scenario_type: scenarioType,
+        }),
+      );
+    }
+    const results = receptors.map((receptor) => {
+      const distance = haversineDistanceM(
+        effectiveSource.latitude,
+        effectiveSource.longitude,
+        receptor.latitude,
+        receptor.longitude,
+      );
+      const baseInputs = payload.inputs ?? {};
+      const outputs =
+        modelId === "dispersion.gaussian_puff_ground"
+          ? calculateModel(
+              modelId,
+              {
+                x: distance,
+                y: 0,
+                z: 0,
+                Q: baseInputs.Q ?? 25,
+                u: baseInputs.u ?? 3.5,
+                sigma_y: baseInputs.sigma_y ?? sigmaY(distance, baseInputs.stability_class ?? "D"),
+                sigma_z: baseInputs.sigma_z ?? sigmaZ(distance, baseInputs.stability_class ?? "D"),
+              },
+              payload.constants ?? {},
+            ).outputs
+          : calculateModel(
+              modelId,
+              {
+                distance_m: distance,
+                burning_rate_kg_s: baseInputs.burning_rate_kg_s,
+                heat_of_combustion_kj_kg: baseInputs.heat_of_combustion_kj_kg,
+              },
+              payload.constants ?? {},
+            ).outputs;
+      const result = {
+        id: receptor.id,
+        label: receptor.label || receptor.id,
+        latitude: receptor.latitude,
+        longitude: receptor.longitude,
+        distance_m: round(distance, 3),
+        outputs,
+      };
+      features.push(
+        pointFeature(receptor.latitude, receptor.longitude, {
+          role: "receptor",
+          id: result.id,
+          label: result.label,
+          distance_m: result.distance_m,
+          ...outputs,
+        }),
+      );
+      return result;
+    });
+    return {
+      scenario_type: scenarioType,
+      model: summary(model),
+      source,
+      release_point: releasePoint,
+      pipeline_route: pipelineRoute,
+      receptors: results,
+      constants: resolveConstants(modelId, payload.constants ?? {}),
+      equations: model.equations,
+      geojson: { type: "FeatureCollection", features },
+    };
+  }
+
+  function evaluateImpactZones(payload, pipelineRoute = null) {
+    const scenarioType = String(payload.scenario_type).toLowerCase();
+    const source = payload.source;
+    const releasePoint = pipelineRoute ? snapSourceToRoute(source, pipelineRoute) : null;
+    const effectiveSource = releasePoint || source;
+    const asset = payload.asset ?? {};
+    const criteria = payload.criteria ?? [];
+    const modelId = scenarioType === "fire" ? "fire.point_source_heat_flux_radius" : "dispersion.gaussian_puff_screening_radius";
+    const model = MODEL_DETAILS[modelId];
+    const features = [
+      pointFeature(source.latitude, source.longitude, {
+        role: "source",
+        label: source.label || "Source",
+        scenario_type: scenarioType,
+        ...asset,
+      }),
+    ];
+    if (pipelineRoute) {
+      features.push(
+        lineFeature(pipelineRoute.points, {
+          role: "pipeline_route",
+          route_id: pipelineRoute.id,
+          label: pipelineRoute.name,
+        }),
+      );
+      features.push(
+        pointFeature(releasePoint.latitude, releasePoint.longitude, {
+          role: "release_point",
+          label: releasePoint.label || "Pipeline release",
+          scenario_type: scenarioType,
+        }),
+      );
+    }
+    const zones = criteria.map((criterion) => {
+      const outputs =
+        scenarioType === "fire"
+          ? calculateModel(
+              modelId,
+              {
+                burning_rate_kg_s: asset.burning_rate_kg_s,
+                heat_of_combustion_kj_kg: asset.heat_of_combustion_kj_kg,
+                impact_threshold_kw_m2: criterion.threshold,
+              },
+              payload.constants ?? {},
+            ).outputs
+          : calculateModel(
+              modelId,
+              {
+                released_mass_kg: buildImpactReleasedMass(asset),
+                concentration_threshold_kg_m3: criterion.threshold,
+                stability_class: asset.stability_class ?? "D",
+                y: asset.y ?? 0,
+                z: asset.z ?? 0,
+              },
+              payload.constants ?? {},
+            ).outputs;
+      features.push(
+        circlePolygon(effectiveSource.latitude, effectiveSource.longitude, Number(outputs.impact_radius_m), {
+          role: "impact_zone",
+          label: criterion.label,
+          threshold: criterion.threshold,
+          unit: criterion.unit,
+          radius_m: outputs.impact_radius_m,
+          area_m2: outputs.impact_area_m2,
+          scenario_type: scenarioType,
+        }),
+      );
+      return {
+        label: criterion.label,
+        threshold: criterion.threshold,
+        unit: criterion.unit,
+        radius_m: Number(outputs.impact_radius_m),
+        area_m2: Number(outputs.impact_area_m2),
+        outputs,
+      };
+    });
+    return {
+      scenario_type: scenarioType,
+      source,
+      release_point: releasePoint,
+      pipeline_route: pipelineRoute,
+      asset,
+      model: summary(model),
+      zones,
+      constants: resolveConstants(modelId, payload.constants ?? {}),
+      equations: model.equations,
+      geojson: { type: "FeatureCollection", features },
     };
   }
 
@@ -1690,6 +1952,24 @@
     if (method === "GET" && path.pathname === "/scenarios") {
       return [];
     }
+    if (method === "GET" && path.pathname === "/gis/pipeline-routes") {
+      return { items: Array.from(PIPELINE_ROUTES.values()) };
+    }
+    if (method === "POST" && path.pathname === "/gis/pipeline-routes") {
+      return createPipelineRouteRecord(payload ?? {});
+    }
+    if (method === "GET" && path.pathname.startsWith("/gis/pipeline-routes/")) {
+      const routeId = path.pathname.split("/")[3];
+      const route = PIPELINE_ROUTES.get(routeId);
+      if (!route) {
+        throw error("Pipeline route not found.", 404);
+      }
+      if (path.pathname.endsWith("/evaluate") || path.pathname.endsWith("/impact-zones")) {
+        // fall through to the dedicated POST handlers below
+      } else {
+        return route;
+      }
+    }
     if (method === "POST" && path.pathname === "/scenario-engine/define") {
       return { scenario: buildScenarioDefinition(payload) };
     }
@@ -1724,145 +2004,26 @@
       return analyzeSign(payload);
     }
     if (method === "POST" && path.pathname === "/gis/scenarios/evaluate") {
-      const scenarioType = String(payload.scenario_type).toLowerCase();
-      const modelId = payload.model_id || SCENARIOS[scenarioType]?.default_model_id;
-      const model = MODEL_DETAILS[modelId];
-      if (!model) {
-        throw error("Model not found.", 404);
-      }
-      const source = payload.source;
-      const receptors = payload.receptors ?? [];
-      const features = [
-        pointFeature(source.latitude, source.longitude, {
-          role: "source",
-          label: source.label || "Source",
-          scenario_type: scenarioType,
-        }),
-      ];
-      const results = receptors.map((receptor) => {
-        const distance = haversineDistanceM(source.latitude, source.longitude, receptor.latitude, receptor.longitude);
-        const baseInputs = payload.inputs ?? {};
-        const outputs =
-          modelId === "dispersion.gaussian_puff_ground"
-            ? calculateModel(
-                modelId,
-                {
-                  x: distance,
-                  y: 0,
-                  z: 0,
-                  Q: baseInputs.Q ?? 25,
-                  u: baseInputs.u ?? 3.5,
-                  sigma_y: baseInputs.sigma_y ?? sigmaY(distance, baseInputs.stability_class ?? "D"),
-                  sigma_z: baseInputs.sigma_z ?? sigmaZ(distance, baseInputs.stability_class ?? "D"),
-                },
-                payload.constants ?? {},
-              ).outputs
-            : calculateModel(
-                modelId,
-                {
-                  distance_m: distance,
-                  burning_rate_kg_s: baseInputs.burning_rate_kg_s,
-                  heat_of_combustion_kj_kg: baseInputs.heat_of_combustion_kj_kg,
-                },
-                payload.constants ?? {},
-              ).outputs;
-        const result = {
-          id: receptor.id,
-          label: receptor.label || receptor.id,
-          latitude: receptor.latitude,
-          longitude: receptor.longitude,
-          distance_m: round(distance, 3),
-          outputs,
-        };
-        features.push(
-          pointFeature(receptor.latitude, receptor.longitude, {
-            role: "receptor",
-            id: result.id,
-            label: result.label,
-            distance_m: result.distance_m,
-            ...outputs,
-          }),
-        );
-        return result;
-      });
-      return {
-        scenario_type: scenarioType,
-        model: summary(model),
-        source,
-        receptors: results,
-        constants: resolveConstants(modelId, payload.constants ?? {}),
-        equations: model.equations,
-        geojson: { type: "FeatureCollection", features },
-      };
+      return evaluateGisScenario(payload);
     }
     if (method === "POST" && path.pathname === "/gis/impact-zones") {
-      const scenarioType = String(payload.scenario_type).toLowerCase();
-      const source = payload.source;
-      const asset = payload.asset ?? {};
-      const criteria = payload.criteria ?? [];
-      const modelId = scenarioType === "fire" ? "fire.point_source_heat_flux_radius" : "dispersion.gaussian_puff_screening_radius";
-      const model = MODEL_DETAILS[modelId];
-      const features = [
-        pointFeature(source.latitude, source.longitude, {
-          role: "source",
-          label: source.label || "Source",
-          scenario_type: scenarioType,
-          ...asset,
-        }),
-      ];
-      const zones = criteria.map((criterion) => {
-        const outputs =
-          scenarioType === "fire"
-            ? calculateModel(
-                modelId,
-                {
-                  burning_rate_kg_s: asset.burning_rate_kg_s,
-                  heat_of_combustion_kj_kg: asset.heat_of_combustion_kj_kg,
-                  impact_threshold_kw_m2: criterion.threshold,
-                },
-                payload.constants ?? {},
-              ).outputs
-            : calculateModel(
-                modelId,
-                {
-                  released_mass_kg: buildImpactReleasedMass(asset),
-                  concentration_threshold_kg_m3: criterion.threshold,
-                  stability_class: asset.stability_class ?? "D",
-                  y: asset.y ?? 0,
-                  z: asset.z ?? 0,
-                },
-                payload.constants ?? {},
-              ).outputs;
-        features.push(
-          circlePolygon(source.latitude, source.longitude, Number(outputs.impact_radius_m), {
-            role: "impact_zone",
-            label: criterion.label,
-            threshold: criterion.threshold,
-            unit: criterion.unit,
-            radius_m: outputs.impact_radius_m,
-            area_m2: outputs.impact_area_m2,
-            scenario_type: scenarioType,
-          }),
-        );
-        return {
-          label: criterion.label,
-          threshold: criterion.threshold,
-          unit: criterion.unit,
-          radius_m: Number(outputs.impact_radius_m),
-          area_m2: Number(outputs.impact_area_m2),
-          outputs,
-        };
-      });
-      return {
-        scenario_type: scenarioType,
-        source,
-        asset,
-        model: summary(model),
-        zones,
-        constants: resolveConstants(modelId, payload.constants ?? {}),
-        equations: model.equations,
-        geojson: { type: "FeatureCollection", features },
-      };
+      return evaluateImpactZones(payload);
+    }
+    if (method === "POST" && path.pathname.endsWith("/evaluate") && path.pathname.startsWith("/gis/pipeline-routes/")) {
+      const routeId = path.pathname.split("/")[3];
+      const route = PIPELINE_ROUTES.get(routeId);
+      if (!route) {
+        throw error("Pipeline route not found.", 404);
+      }
+      return evaluateGisScenario(payload, route);
+    }
+    if (method === "POST" && path.pathname.endsWith("/impact-zones") && path.pathname.startsWith("/gis/pipeline-routes/")) {
+      const routeId = path.pathname.split("/")[3];
+      const route = PIPELINE_ROUTES.get(routeId);
+      if (!route) {
+        throw error("Pipeline route not found.", 404);
+      }
+      return evaluateImpactZones(payload, route);
     }
     throw error(`Unsupported browser-local route: ${path.pathname}`, 404);
   }

@@ -259,6 +259,15 @@ def initialize_database(connection: sqlite3.Connection | None = None) -> None:
                 download_url TEXT
             );
 
+            CREATE TABLE IF NOT EXISTS pipeline_routes (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                points_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
@@ -368,3 +377,83 @@ def reset_runtime_caches() -> None:
     load_toxic_criteria_registry.cache_clear()
     load_constants_registry.cache_clear()
     load_model_constants_registry.cache_clear()
+
+
+def create_pipeline_route(
+    *,
+    route_id: str,
+    name: str,
+    description: str | None,
+    points: list[dict[str, Any]],
+) -> dict[str, Any]:
+    connection = get_connection()
+    timestamp = _utcnow()
+    payload = {
+        "id": route_id,
+        "name": name,
+        "description": description,
+        "points": points,
+        "created_at": timestamp,
+        "updated_at": timestamp,
+    }
+    with _DB_LOCK:
+        connection.execute(
+            """
+            INSERT INTO pipeline_routes (id, name, description, points_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                route_id,
+                name,
+                description,
+                json.dumps(points),
+                timestamp,
+                timestamp,
+            ),
+        )
+        connection.commit()
+    return payload
+
+
+def list_pipeline_routes() -> list[dict[str, Any]]:
+    connection = get_connection()
+    rows = connection.execute(
+        """
+        SELECT id, name, description, points_json, created_at, updated_at
+        FROM pipeline_routes
+        ORDER BY updated_at DESC, id DESC
+        """
+    ).fetchall()
+    return [
+        {
+            "id": str(row["id"]),
+            "name": str(row["name"]),
+            "description": str(row["description"]) if row["description"] else None,
+            "points": json.loads(str(row["points_json"])),
+            "created_at": str(row["created_at"]),
+            "updated_at": str(row["updated_at"]),
+        }
+        for row in rows
+    ]
+
+
+def get_pipeline_route(route_id: str) -> dict[str, Any] | None:
+    connection = get_connection()
+    row = connection.execute(
+        """
+        SELECT id, name, description, points_json, created_at, updated_at
+        FROM pipeline_routes
+        WHERE id = ?
+        """,
+        (route_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return {
+        "id": str(row["id"]),
+        "name": str(row["name"]),
+        "description": str(row["description"]) if row["description"] else None,
+        "points": json.loads(str(row["points_json"])),
+        "created_at": str(row["created_at"]),
+        "updated_at": str(row["updated_at"]),
+    }

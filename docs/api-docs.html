@@ -1131,6 +1131,11 @@
                   <td>Runs before/after workflow comparisons and report generation using the persisted workflow resources.</td>
                 </tr>
                 <tr>
+                  <td><code>POST /gis/pipeline-routes</code>, <code>GET /gis/pipeline-routes</code>, <code>GET /gis/pipeline-routes/{route_id}</code></td>
+                  <td><code>name</code>, <code>description</code>, ordered GPS <code>points</code>[]</td>
+                  <td>Persists pipeline centerlines so route-aware leak studies can be reused by the app, API clients, and notebooks.</td>
+                </tr>
+                <tr>
                   <td><code>POST /gis/scenarios/evaluate</code></td>
                   <td><code>scenario_type</code>, <code>source</code>, <code>receptors</code>[], <code>model_id</code>, <code>inputs</code>, <code>constants</code></td>
                   <td>Applies selected model per receptor with haversine distance pre-processing.</td>
@@ -1139,6 +1144,11 @@
                   <td><code>POST /gis/impact-zones</code></td>
                   <td><code>scenario_type</code>, <code>source</code>, <code>asset</code>, <code>criteria</code>[], <code>constants</code></td>
                   <td>Impact radius relation from selected impact model, then geodesic circle polygon mapping.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /gis/pipeline-routes/{route_id}/evaluate</code>, <code>POST /gis/pipeline-routes/{route_id}/impact-zones</code></td>
+                  <td>Same GIS payload as point-source analysis plus a route-scoped release location</td>
+                  <td>Snaps the requested release to the nearest route segment and returns the route line, release point, receptors, and impact polygons in one response.</td>
                 </tr>
                 <tr>
                   <td><code>POST /visualization/solve</code></td>

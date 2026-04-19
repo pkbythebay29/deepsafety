@@ -73,7 +73,39 @@ class ReceptorPoint(GeoPoint):
     id: str
 
 
+class PipelineRoutePoint(GeoPoint):
+    sequence: int
+
+
+class PipelineRouteCreateRequest(BaseModel):
+    name: str
+    description: str | None = None
+    points: list[GeoPoint] = Field(default_factory=list)
+
+
+class PipelineRoute(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    points: list[PipelineRoutePoint] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class PipelineRouteListResponse(BaseModel):
+    items: list[PipelineRoute] = Field(default_factory=list)
+
+
 class GISScenarioRequest(BaseModel):
+    scenario_type: str
+    source: GeoPoint
+    receptors: list[ReceptorPoint] = Field(default_factory=list)
+    model_id: str | None = None
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    constants: dict[str, Any] = Field(default_factory=dict)
+
+
+class PipelineGISScenarioRequest(BaseModel):
     scenario_type: str
     source: GeoPoint
     receptors: list[ReceptorPoint] = Field(default_factory=list)
@@ -95,6 +127,8 @@ class GISScenarioResponse(BaseModel):
     scenario_type: str
     model: ModelSummary
     source: GeoPoint
+    release_point: GeoPoint | None = None
+    pipeline_route: PipelineRoute | None = None
     receptors: list[GISReceptorResult] = Field(default_factory=list)
     constants: list[ConstantMetadata] = Field(default_factory=list)
     equations: list[str] = Field(default_factory=list)
@@ -115,6 +149,14 @@ class ImpactZoneRequest(BaseModel):
     constants: dict[str, Any] = Field(default_factory=dict)
 
 
+class PipelineImpactZoneRequest(BaseModel):
+    scenario_type: str
+    source: GeoPoint
+    asset: dict[str, Any] = Field(default_factory=dict)
+    criteria: list[ImpactCriterion] = Field(default_factory=list)
+    constants: dict[str, Any] = Field(default_factory=dict)
+
+
 class ImpactZone(BaseModel):
     label: str
     threshold: float
@@ -127,6 +169,8 @@ class ImpactZone(BaseModel):
 class ImpactZoneResponse(BaseModel):
     scenario_type: str
     source: GeoPoint
+    release_point: GeoPoint | None = None
+    pipeline_route: PipelineRoute | None = None
     asset: dict[str, Any] = Field(default_factory=dict)
     model: ModelSummary
     zones: list[ImpactZone] = Field(default_factory=list)

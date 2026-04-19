@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepsafety"
-version = "1.0.1"
+version = "1.0.2"
 description = "OpenAPI-aligned process safety analysis package with materials, source, dispersion, fire, relief, and hazard-evaluation services"
 dependencies = [
     "fastapi>=0.115,<1.0",

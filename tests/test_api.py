@@ -182,6 +182,73 @@ def test_gis_leak_scenario_autofills_sigma_values_from_stability_class() -> None
     assert payload["receptors"][0]["outputs"]["concentration"] > 0
 
 
+def test_pipeline_routes_can_be_created_and_listed() -> None:
+    response = client.post(
+        "/gis/pipeline-routes",
+        json={
+            "name": "North line",
+            "description": "Main transmission route",
+            "points": [
+                {"latitude": 51.5074, "longitude": -0.1278, "label": "A"},
+                {"latitude": 51.5078, "longitude": -0.1269, "label": "B"},
+                {"latitude": 51.5082, "longitude": -0.1260, "label": "C"},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    route = response.json()
+    assert route["id"].startswith("pipe_")
+    assert len(route["points"]) == 3
+
+    listing = client.get("/gis/pipeline-routes")
+    assert listing.status_code == 200
+    assert any(item["id"] == route["id"] for item in listing.json()["items"])
+
+
+def test_pipeline_route_gis_scenario_snaps_release_point_to_route() -> None:
+    route = client.post(
+        "/gis/pipeline-routes",
+        json={
+            "name": "Scenario route",
+            "points": [
+                {"latitude": 51.5074, "longitude": -0.1278},
+                {"latitude": 51.5074, "longitude": -0.1268},
+            ],
+        },
+    ).json()
+
+    response = client.post(
+        f"/gis/pipeline-routes/{route['id']}/evaluate",
+        json={
+            "scenario_type": "leak",
+            "source": {
+                "latitude": 51.5076,
+                "longitude": -0.1273,
+                "label": "Observed release",
+            },
+            "receptors": [
+                {
+                    "id": "gate",
+                    "latitude": 51.5079,
+                    "longitude": -0.1267,
+                }
+            ],
+            "inputs": {
+                "Q": 25,
+                "u": 3.5,
+                "stability_class": "D",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["pipeline_route"]["id"] == route["id"]
+    assert payload["release_point"] is not None
+    assert any(feature["geometry"]["type"] == "LineString" for feature in payload["geojson"]["features"])
+
+
 def test_fire_impact_zones_return_circle_geometry() -> None:
     response = client.post(
         "/gis/impact-zones",
@@ -275,6 +342,48 @@ def test_leak_impact_zones_can_derive_release_from_pressure_temperature_and_geom
     payload = response.json()
     assert payload["zones"][0]["radius_m"] >= 0
     assert payload["zones"][0]["outputs"]["screening_release_mass_kg"] > 0
+
+
+def test_pipeline_route_impact_zones_include_route_geometry() -> None:
+    route = client.post(
+        "/gis/pipeline-routes",
+        json={
+            "name": "Impact route",
+            "points": [
+                {"latitude": 51.5074, "longitude": -0.1278},
+                {"latitude": 51.5074, "longitude": -0.1268},
+            ],
+        },
+    ).json()
+
+    response = client.post(
+        f"/gis/pipeline-routes/{route['id']}/impact-zones",
+        json={
+            "scenario_type": "leak",
+            "source": {
+                "latitude": 51.5077,
+                "longitude": -0.1272,
+                "label": "Pipeline release",
+            },
+            "asset": {
+                "line_pressure_kpa": 6000,
+                "mass_flow_kg_s": 1.2,
+                "gas_temperature_c": 18,
+                "leak_duration_s": 60,
+                "stability_class": "D",
+            },
+            "criteria": [
+                {"label": "Concern threshold", "threshold": 0.02, "unit": "kg/m^3"},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["pipeline_route"]["id"] == route["id"]
+    assert payload["release_point"] is not None
+    assert any(feature["geometry"]["type"] == "LineString" for feature in payload["geojson"]["features"])
+    assert any(feature["geometry"]["type"] == "Polygon" for feature in payload["geojson"]["features"])
 
 
 def test_sign_analysis_endpoint_returns_pipeline_leak_seed() -> None:

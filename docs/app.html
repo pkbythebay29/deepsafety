@@ -46,7 +46,9 @@
           an external API endpoint. Each field explains the required parameter,
           each model panel shows the equations, constants, and provenance used
           for the result, and impact output is rendered as consequence rings so
-          effect intensity can be interpreted by radius.
+          effect intensity can be interpreted by radius. For pipeline releases,
+          you can sketch a route with GPS points, snap a release onto it, and
+          run the same receptor and ring analysis flow.
         </p>
       </header>
 
@@ -54,7 +56,7 @@
         <section class="card">
           <div class="panel-header">
             <h2>Scenario Builder</h2>
-            <p>Use this to configure the source, map inputs, and run checks.</p>
+            <p>Use this to configure the source, route geometry, map inputs, and run checks.</p>
           </div>
 
           <label class="field">
@@ -188,6 +190,7 @@
 
           <div class="button-row">
             <button id="saveApiBase" class="secondary-button">Save mode</button>
+            <button id="pipelineMode" class="secondary-button">Draw pipeline</button>
             <button id="sourceMode" class="secondary-button">Place source</button>
             <button id="receptorMode" class="secondary-button">Place receptors</button>
             <button id="resetMap" class="ghost-button">Reset map</button>
@@ -202,7 +205,7 @@
         <section class="card">
           <div class="panel-header">
             <h2>Map</h2>
-            <p>Click once for a source, then switch modes to add receptors.</p>
+            <p>Draw a pipeline first if needed, then place a release source and add receptors.</p>
           </div>
           <div id="map"></div>
         </section>

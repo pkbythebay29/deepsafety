@@ -1,5 +1,27 @@
 # Release Notes
 
+## 1.0.2
+
+This release adds persisted pipeline-route workflows across the API, browser app, and Python client, then aligns the docs and package metadata for publication.
+
+### Added
+
+- Persisted GIS pipeline routes with GPS coordinates:
+  - `GET /gis/pipeline-routes`
+  - `POST /gis/pipeline-routes`
+  - `GET /gis/pipeline-routes/{route_id}`
+- Route-aware consequence analysis:
+  - `POST /gis/pipeline-routes/{route_id}/evaluate`
+  - `POST /gis/pipeline-routes/{route_id}/impact-zones`
+- Python client helpers for pipeline-route creation, retrieval, receptor analysis, and impact-zone analysis
+- Interactive app support for drawing a pipeline polyline and running leak analysis against the snapped release location
+
+### Changed
+
+- GIS responses now include the snapped release point and pipeline route geometry when route-based analysis is used
+- Browser-local website runtime now mirrors the pipeline-route API contract so the app works without an external backend
+- Website docs and release metadata now reflect the route-aware GIS workflow and new package version
+
 ## 1.0.1
 
 This release reconciles the published package with the latest repository state and activates automated PyPI release publishing through GitHub Actions.

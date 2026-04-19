@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from typing import Any
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,7 @@ from deepsafety.catalog import (
 )
 from deepsafety.constants import get_constant_definition, get_constant_value, list_constants, resolve_constants
 from deepsafety.core_analysis import create_core_analysis_router
+from deepsafety.data_access import create_pipeline_route, get_pipeline_route, list_pipeline_routes
 from deepsafety.dispersion.neutrally_buoyant import calculate_sigma_y, calculate_sigma_z
 from deepsafety.dispersion_workflows import (
     evaluate_release_mitigation,
@@ -100,6 +102,7 @@ from deepsafety.schemas import (
     ConstantMetadata,
     FieldMetadata,
     GISReceptorResult,
+    GeoPoint,
     GISScenarioRequest,
     GISScenarioResponse,
     ImpactZone,
@@ -107,6 +110,12 @@ from deepsafety.schemas import (
     ImpactZoneResponse,
     ModelDetail,
     ModelSummary,
+    PipelineGISScenarioRequest,
+    PipelineImpactZoneRequest,
+    PipelineRoute,
+    PipelineRouteCreateRequest,
+    PipelineRouteListResponse,
+    PipelineRoutePoint,
     ReferenceMetadata,
     ScenarioDefinitionRequest,
     ScenarioDefinitionResponse,
@@ -775,6 +784,345 @@ def _build_impact_inputs(
             "y": asset.get("y", 0.0),
             "z": asset.get("z", 0.0),
         },
+    )
+
+
+def _line_feature(points: list[GeoPoint], properties: dict[str, object]) -> dict[str, object]:
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [[point.longitude, point.latitude] for point in points],
+        },
+        "properties": properties,
+    }
+
+
+def _route_point_to_schema(point: dict[str, object], sequence: int) -> PipelineRoutePoint:
+    return PipelineRoutePoint(
+        sequence=sequence,
+        latitude=float(point["latitude"]),
+        longitude=float(point["longitude"]),
+        label=str(point["label"]) if point.get("label") else None,
+    )
+
+
+def _route_to_schema(route: dict[str, Any]) -> PipelineRoute:
+    return PipelineRoute(
+        id=str(route["id"]),
+        name=str(route["name"]),
+        description=str(route["description"]) if route.get("description") else None,
+        points=[
+            _route_point_to_schema(point, index + 1)
+            for index, point in enumerate(route.get("points", []))
+        ],
+        created_at=str(route["created_at"]),
+        updated_at=str(route["updated_at"]),
+    )
+
+
+def _project_point_to_segment(
+    point: GeoPoint,
+    start: GeoPoint,
+    end: GeoPoint,
+) -> tuple[GeoPoint, float]:
+    latitude_scale = 111_320.0
+    longitude_scale = 111_320.0 * math.cos(math.radians((start.latitude + end.latitude) / 2.0))
+    if abs(longitude_scale) < 1e-6:
+        longitude_scale = 1e-6
+
+    px = point.longitude * longitude_scale
+    py = point.latitude * latitude_scale
+    ax = start.longitude * longitude_scale
+    ay = start.latitude * latitude_scale
+    bx = end.longitude * longitude_scale
+    by = end.latitude * latitude_scale
+
+    dx = bx - ax
+    dy = by - ay
+    denominator = dx * dx + dy * dy
+    if denominator <= 0:
+        snapped = GeoPoint(latitude=start.latitude, longitude=start.longitude, label=start.label)
+        distance = haversine_distance_m(
+            point.latitude,
+            point.longitude,
+            snapped.latitude,
+            snapped.longitude,
+        )
+        return snapped, distance
+
+    t = ((px - ax) * dx + (py - ay) * dy) / denominator
+    t = min(1.0, max(0.0, t))
+    snapped = GeoPoint(
+        latitude=(ay + t * dy) / latitude_scale,
+        longitude=(ax + t * dx) / longitude_scale,
+        label=point.label,
+    )
+    distance = haversine_distance_m(
+        point.latitude,
+        point.longitude,
+        snapped.latitude,
+        snapped.longitude,
+    )
+    return snapped, distance
+
+
+def _snap_source_to_route(source: GeoPoint, route: PipelineRoute) -> tuple[GeoPoint, float]:
+    if len(route.points) == 1:
+        only_point = route.points[0]
+        snapped = GeoPoint(
+            latitude=only_point.latitude,
+            longitude=only_point.longitude,
+            label=source.label,
+        )
+        distance = haversine_distance_m(
+            source.latitude,
+            source.longitude,
+            snapped.latitude,
+            snapped.longitude,
+        )
+        return snapped, distance
+
+    best_point: GeoPoint | None = None
+    best_distance: float | None = None
+    for index in range(len(route.points) - 1):
+        candidate, distance = _project_point_to_segment(source, route.points[index], route.points[index + 1])
+        if best_distance is None or distance < best_distance:
+            best_point = candidate
+            best_distance = distance
+
+    if best_point is None or best_distance is None:
+        raise HTTPException(status_code=400, detail="Pipeline route must contain at least one coordinate.")
+    return best_point, best_distance
+
+
+def _validate_pipeline_points(points: list[GeoPoint]) -> None:
+    if len(points) < 2:
+        raise HTTPException(status_code=400, detail="Pipeline route requires at least two GPS coordinates.")
+
+
+def _evaluate_gis_scenario_core(
+    *,
+    scenario_type: str,
+    source: GeoPoint,
+    receptors: list[Any],
+    model_id: str | None,
+    inputs: dict[str, Any],
+    constants: dict[str, Any],
+    pipeline_route: PipelineRoute | None = None,
+    release_point: GeoPoint | None = None,
+) -> GISScenarioResponse:
+    normalized_scenario_type = scenario_type.lower()
+    resolved_model_id = model_id or DEFAULT_SCENARIO_MODELS.get(normalized_scenario_type)
+    if resolved_model_id is None:
+        raise HTTPException(status_code=400, detail="Unsupported scenario type.")
+
+    model = get_model(resolved_model_id)
+    if model is None:
+        raise HTTPException(status_code=404, detail="Model not found.")
+    if not model.gis_ready:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model '{resolved_model_id}' is not GIS-enabled.",
+        )
+
+    effective_source = release_point or source
+    geojson_features = [
+        point_feature(
+            source.latitude,
+            source.longitude,
+            {
+                "role": "source",
+                "label": source.label or "Source",
+                "scenario_type": normalized_scenario_type,
+            },
+        )
+    ]
+    if release_point is not None:
+        geojson_features.append(
+            point_feature(
+                release_point.latitude,
+                release_point.longitude,
+                {
+                    "role": "release_point",
+                    "label": release_point.label or "Release point",
+                    "scenario_type": normalized_scenario_type,
+                },
+            )
+        )
+    if pipeline_route is not None:
+        geojson_features.append(
+            _line_feature(
+                list(pipeline_route.points),
+                {
+                    "role": "pipeline_route",
+                    "route_id": pipeline_route.id,
+                    "label": pipeline_route.name,
+                },
+            )
+        )
+
+    resolved_constants = resolve_constants(resolved_model_id, constants)
+    receptor_results: list[GISReceptorResult] = []
+    for receptor in receptors:
+        distance_m = haversine_distance_m(
+            effective_source.latitude,
+            effective_source.longitude,
+            receptor.latitude,
+            receptor.longitude,
+        )
+        model_inputs = _build_gis_inputs(resolved_model_id, distance_m, inputs)
+        try:
+            outputs, _ = run_model(resolved_model_id, model_inputs, constants)
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        receptor_result = GISReceptorResult(
+            id=receptor.id,
+            label=receptor.label,
+            latitude=receptor.latitude,
+            longitude=receptor.longitude,
+            distance_m=round(distance_m, 3),
+            outputs=outputs,
+        )
+        receptor_results.append(receptor_result)
+        geojson_features.append(
+            point_feature(
+                receptor.latitude,
+                receptor.longitude,
+                {
+                    "role": "receptor",
+                    "id": receptor.id,
+                    "label": receptor.label,
+                    "distance_m": receptor_result.distance_m,
+                    **outputs,
+                },
+            )
+        )
+
+    return GISScenarioResponse(
+        scenario_type=normalized_scenario_type,
+        model=_to_model_summary(model),
+        source=source,
+        release_point=release_point,
+        pipeline_route=pipeline_route,
+        receptors=receptor_results,
+        constants=_to_constant_metadata(resolved_constants),
+        equations=list(model.equations),
+        geojson={"type": "FeatureCollection", "features": geojson_features},
+    )
+
+
+def _impact_zones_core(
+    *,
+    scenario_type: str,
+    source: GeoPoint,
+    asset: dict[str, Any],
+    criteria: list[Any],
+    constants: dict[str, Any],
+    pipeline_route: PipelineRoute | None = None,
+    release_point: GeoPoint | None = None,
+) -> ImpactZoneResponse:
+    normalized_scenario_type = scenario_type.lower()
+    if normalized_scenario_type not in DEFAULT_IMPACT_MODELS:
+        raise HTTPException(status_code=400, detail="Unsupported scenario type.")
+
+    model_id = DEFAULT_IMPACT_MODELS[normalized_scenario_type]
+    model = get_model(model_id)
+    if model is None:
+        raise HTTPException(status_code=404, detail="Model not found.")
+
+    effective_source = release_point or source
+    geojson_features = [
+        point_feature(
+            source.latitude,
+            source.longitude,
+            {
+                "role": "source",
+                "label": source.label or "Source",
+                "scenario_type": normalized_scenario_type,
+                **asset,
+            },
+        )
+    ]
+    if release_point is not None:
+        geojson_features.append(
+            point_feature(
+                release_point.latitude,
+                release_point.longitude,
+                {
+                    "role": "release_point",
+                    "label": release_point.label or "Release point",
+                    "scenario_type": normalized_scenario_type,
+                },
+            )
+        )
+    if pipeline_route is not None:
+        geojson_features.append(
+            _line_feature(
+                list(pipeline_route.points),
+                {
+                    "role": "pipeline_route",
+                    "route_id": pipeline_route.id,
+                    "label": pipeline_route.name,
+                },
+            )
+        )
+
+    resolved_constants = resolve_constants(model_id, constants)
+    zones: list[ImpactZone] = []
+    for criterion in criteria:
+        try:
+            _, model_inputs = _build_impact_inputs(
+                normalized_scenario_type,
+                asset,
+                criterion.threshold,
+            )
+            outputs, _ = run_model(model_id, model_inputs, constants)
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except ModelInputError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        zone = ImpactZone(
+            label=criterion.label,
+            threshold=criterion.threshold,
+            unit=criterion.unit,
+            radius_m=float(outputs["impact_radius_m"]),
+            area_m2=float(outputs["impact_area_m2"]),
+            outputs=outputs,
+        )
+        zones.append(zone)
+        geojson_features.append(
+            circle_polygon(
+                effective_source.latitude,
+                effective_source.longitude,
+                zone.radius_m,
+                {
+                    "role": "impact_zone",
+                    "label": criterion.label,
+                    "threshold": criterion.threshold,
+                    "unit": criterion.unit,
+                    "radius_m": zone.radius_m,
+                    "area_m2": zone.area_m2,
+                    "scenario_type": normalized_scenario_type,
+                },
+            )
+        )
+
+    return ImpactZoneResponse(
+        scenario_type=normalized_scenario_type,
+        source=source,
+        release_point=release_point,
+        pipeline_route=pipeline_route,
+        asset=asset,
+        model=_to_model_summary(model),
+        zones=zones,
+        constants=_to_constant_metadata(resolved_constants),
+        equations=list(model.equations),
+        geojson={"type": "FeatureCollection", "features": geojson_features},
     )
 
 
@@ -1686,161 +2034,84 @@ def create_app() -> FastAPI:
     def calculate(model_id: str, request: CalculationRequest) -> CalculationResponse:
         return _execute_model(model_id, request)
 
+    @app.get("/gis/pipeline-routes", response_model=PipelineRouteListResponse)
+    def list_gis_pipeline_routes() -> PipelineRouteListResponse:
+        return PipelineRouteListResponse(items=[_route_to_schema(route) for route in list_pipeline_routes()])
+
+    @app.post("/gis/pipeline-routes", response_model=PipelineRoute)
+    def create_gis_pipeline_route(request: PipelineRouteCreateRequest) -> PipelineRoute:
+        _validate_pipeline_points(request.points)
+        route = create_pipeline_route(
+            route_id=f"pipe_{uuid4().hex[:12]}",
+            name=request.name,
+            description=request.description,
+            points=[point.model_dump(exclude_none=True) for point in request.points],
+        )
+        return _route_to_schema(route)
+
+    @app.get("/gis/pipeline-routes/{route_id}", response_model=PipelineRoute)
+    def get_gis_pipeline_route(route_id: str) -> PipelineRoute:
+        route = get_pipeline_route(route_id)
+        if route is None:
+            raise HTTPException(status_code=404, detail="Pipeline route not found.")
+        return _route_to_schema(route)
+
     @app.post("/gis/scenarios/evaluate", response_model=GISScenarioResponse)
     def evaluate_gis_scenario(request: GISScenarioRequest) -> GISScenarioResponse:
-        scenario_type = request.scenario_type.lower()
-        model_id = request.model_id or DEFAULT_SCENARIO_MODELS.get(scenario_type)
-        if model_id is None:
-            raise HTTPException(status_code=400, detail="Unsupported scenario type.")
-
-        model = get_model(model_id)
-        if model is None:
-            raise HTTPException(status_code=404, detail="Model not found.")
-        if not model.gis_ready:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Model '{model_id}' is not GIS-enabled.",
-            )
-
-        receptor_results: list[GISReceptorResult] = []
-        geojson_features = [
-            point_feature(
-                request.source.latitude,
-                request.source.longitude,
-                {
-                    "role": "source",
-                    "label": request.source.label or "Source",
-                    "scenario_type": scenario_type,
-                },
-            )
-        ]
-
-        resolved_constants = resolve_constants(model_id, request.constants)
-
-        for receptor in request.receptors:
-            distance_m = haversine_distance_m(
-                request.source.latitude,
-                request.source.longitude,
-                receptor.latitude,
-                receptor.longitude,
-            )
-            model_inputs = _build_gis_inputs(model_id, distance_m, request.inputs)
-
-            try:
-                outputs, _ = run_model(model_id, model_inputs, request.constants)
-            except NotImplementedError as exc:
-                raise HTTPException(status_code=501, detail=str(exc)) from exc
-            except ModelInputError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-            receptor_result = GISReceptorResult(
-                id=receptor.id,
-                label=receptor.label,
-                latitude=receptor.latitude,
-                longitude=receptor.longitude,
-                distance_m=round(distance_m, 3),
-                outputs=outputs,
-            )
-            receptor_results.append(receptor_result)
-            geojson_features.append(
-                point_feature(
-                    receptor.latitude,
-                    receptor.longitude,
-                    {
-                        "role": "receptor",
-                        "id": receptor.id,
-                        "label": receptor.label,
-                        "distance_m": receptor_result.distance_m,
-                        **outputs,
-                    },
-                )
-            )
-
-        return GISScenarioResponse(
-            scenario_type=scenario_type,
-            model=_to_model_summary(model),
+        return _evaluate_gis_scenario_core(
+            scenario_type=request.scenario_type,
             source=request.source,
-            receptors=receptor_results,
-            constants=_to_constant_metadata(resolved_constants),
-            equations=list(model.equations),
-            geojson={"type": "FeatureCollection", "features": geojson_features},
+            receptors=request.receptors,
+            model_id=request.model_id,
+            inputs=request.inputs,
+            constants=request.constants,
         )
 
     @app.post("/gis/impact-zones", response_model=ImpactZoneResponse)
     def get_impact_zones(request: ImpactZoneRequest) -> ImpactZoneResponse:
-        scenario_type = request.scenario_type.lower()
-        if scenario_type not in DEFAULT_IMPACT_MODELS:
-            raise HTTPException(status_code=400, detail="Unsupported scenario type.")
-
-        model_id = DEFAULT_IMPACT_MODELS[scenario_type]
-        model = get_model(model_id)
-        if model is None:
-            raise HTTPException(status_code=404, detail="Model not found.")
-
-        zones: list[ImpactZone] = []
-        geojson_features = [
-            point_feature(
-                request.source.latitude,
-                request.source.longitude,
-                {
-                    "role": "source",
-                    "label": request.source.label or "Source",
-                    "scenario_type": scenario_type,
-                    **request.asset,
-                },
-            )
-        ]
-
-        resolved_constants = resolve_constants(model_id, request.constants)
-
-        for criterion in request.criteria:
-            try:
-                _, model_inputs = _build_impact_inputs(
-                    scenario_type,
-                    request.asset,
-                    criterion.threshold,
-                )
-                outputs, _ = run_model(model_id, model_inputs, request.constants)
-            except NotImplementedError as exc:
-                raise HTTPException(status_code=501, detail=str(exc)) from exc
-            except ModelInputError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-            zone = ImpactZone(
-                label=criterion.label,
-                threshold=criterion.threshold,
-                unit=criterion.unit,
-                radius_m=float(outputs["impact_radius_m"]),
-                area_m2=float(outputs["impact_area_m2"]),
-                outputs=outputs,
-            )
-            zones.append(zone)
-            geojson_features.append(
-                circle_polygon(
-                    request.source.latitude,
-                    request.source.longitude,
-                    zone.radius_m,
-                    {
-                        "role": "impact_zone",
-                        "label": criterion.label,
-                        "threshold": criterion.threshold,
-                        "unit": criterion.unit,
-                        "radius_m": zone.radius_m,
-                        "area_m2": zone.area_m2,
-                        "scenario_type": scenario_type,
-                    },
-                )
-            )
-
-        return ImpactZoneResponse(
-            scenario_type=scenario_type,
+        return _impact_zones_core(
+            scenario_type=request.scenario_type,
             source=request.source,
             asset=request.asset,
-            model=_to_model_summary(model),
-            zones=zones,
-            constants=_to_constant_metadata(resolved_constants),
-            equations=list(model.equations),
-            geojson={"type": "FeatureCollection", "features": geojson_features},
+            criteria=request.criteria,
+            constants=request.constants,
+        )
+
+    @app.post("/gis/pipeline-routes/{route_id}/evaluate", response_model=GISScenarioResponse)
+    def evaluate_pipeline_route(route_id: str, request: PipelineGISScenarioRequest) -> GISScenarioResponse:
+        route_record = get_pipeline_route(route_id)
+        if route_record is None:
+            raise HTTPException(status_code=404, detail="Pipeline route not found.")
+        route = _route_to_schema(route_record)
+        release_point, _ = _snap_source_to_route(request.source, route)
+        release_point.label = request.source.label or "Pipeline release"
+        return _evaluate_gis_scenario_core(
+            scenario_type=request.scenario_type,
+            source=request.source,
+            receptors=request.receptors,
+            model_id=request.model_id,
+            inputs=request.inputs,
+            constants=request.constants,
+            pipeline_route=route,
+            release_point=release_point,
+        )
+
+    @app.post("/gis/pipeline-routes/{route_id}/impact-zones", response_model=ImpactZoneResponse)
+    def get_pipeline_route_impact_zones(route_id: str, request: PipelineImpactZoneRequest) -> ImpactZoneResponse:
+        route_record = get_pipeline_route(route_id)
+        if route_record is None:
+            raise HTTPException(status_code=404, detail="Pipeline route not found.")
+        route = _route_to_schema(route_record)
+        release_point, _ = _snap_source_to_route(request.source, route)
+        release_point.label = request.source.label or "Pipeline release"
+        return _impact_zones_core(
+            scenario_type=request.scenario_type,
+            source=request.source,
+            asset=request.asset,
+            criteria=request.criteria,
+            constants=request.constants,
+            pipeline_route=route,
+            release_point=release_point,
         )
 
     return app
