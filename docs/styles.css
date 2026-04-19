@@ -1006,6 +1006,15 @@ a {
   max-width: 9ch;
 }
 
+.hero-tagline {
+  margin: 2px 0 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 h1,
 .page-title h1 {
   max-width: none;
