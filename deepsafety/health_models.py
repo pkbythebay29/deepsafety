@@ -7,8 +7,6 @@ from deepsafety.catalog import ModelInputError
 from deepsafety.constants import get_constant_value
 from deepsafety.materials_data import get_material
 
-UNIVERSAL_GAS_CONSTANT_ATM_M3 = get_constant_value("shared.universal_gas_constant_atm_m3")
-
 
 def _require_float(payload: dict[str, Any], key: str) -> float:
     if key not in payload:
@@ -37,9 +35,23 @@ def convert_concentration(payload: dict[str, Any]) -> dict[str, Any]:
     if from_unit == to_unit:
         converted = value
     elif from_unit == "ppm" and to_unit == "mg/m3":
-        converted = value * molecular_weight * pressure_atm / (UNIVERSAL_GAS_CONSTANT_ATM_M3 * temperature_k) / 1e6 * 1000
+        converted = (
+            value
+            * molecular_weight
+            * pressure_atm
+            / (get_constant_value("shared.universal_gas_constant_atm_m3") * temperature_k)
+            / 1e6
+            * 1000
+        )
     elif from_unit == "mg/m3" and to_unit == "ppm":
-        converted = value / 1000 * UNIVERSAL_GAS_CONSTANT_ATM_M3 * temperature_k / (molecular_weight * pressure_atm) * 1e6
+        converted = (
+            value
+            / 1000
+            * get_constant_value("shared.universal_gas_constant_atm_m3")
+            * temperature_k
+            / (molecular_weight * pressure_atm)
+            * 1e6
+        )
     else:
         raise ModelInputError("Supported concentration units are ppm and mg/m3.")
 

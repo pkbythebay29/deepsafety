@@ -54,8 +54,8 @@
           <p class="eyebrow">Quick Start</p>
           <h2>From installation to first consequence result</h2>
           <p>
-            Install the package, load materials, select a release scenario, run a
-            source model, then feed that output to dispersion and effect models.
+            Install the package, load materials, create a persisted scenario,
+            start an analysis job, and inspect the completed workflow resources.
           </p>
           <div class="code-block">
             <pre><code>pip install deepsafety
@@ -64,18 +64,24 @@ from deepsafety import DeepSafetyClient
 
 client = DeepSafetyClient("http://127.0.0.1:8000")
 materials = client.list_materials("gasoline")
-scenario = client.select_release_scenario({
-    "scenarioType": "worst_case",
-    "equipmentType": "tank",
-    "inventoryMass": 5000,
-    "siteTopography": "urban"
+scenario = client.create_scenario({
+    "name": "Gasoline storage case",
+    "model_profile": {"domain": "integrated_consequence"},
+    "inputs": {
+        "inventory_mass_kg": {"kind": "scalar", "value": 5000},
+        "release_duration_s": {"kind": "scalar", "value": 300}
+    }
+})
+analysis = client.create_analysis({
+    "scenario_id": scenario["id"],
+    "analysis_type": "integrated_consequence"
 })</code></pre>
           </div>
         </article>
 
         <article class="tutorial-card" id="scenario-training">
           <p class="eyebrow">Scenario Logic</p>
-          <h2>Realistic vs worst-case vs conservative runs</h2>
+          <h2>Deterministic vs triplet vs probabilistic runs</h2>
           <p>
             Deep Safety keeps scenario mode explicit so teams can compare
             outcomes instead of embedding assumptions inside an opaque
@@ -91,19 +97,19 @@ scenario = client.select_release_scenario({
             </thead>
             <tbody>
               <tr>
-                <td><code>realistic_case</code></td>
-                <td>Best-estimate operating conditions</td>
+                <td><code>deterministic</code></td>
+                <td>Single best-estimate operating state</td>
                 <td>Operational planning and day-to-day risk decisions</td>
               </tr>
               <tr>
-                <td><code>worst_case</code></td>
-                <td>Bounding assumptions</td>
-                <td>Regulatory screening and envelope checks</td>
+                <td><code>scenario_triplet</code></td>
+                <td>Best / realistic / worst input ranges</td>
+                <td>Structured assumption reviews and bounded studies</td>
               </tr>
               <tr>
-                <td><code>conservative-analysis</code></td>
-                <td>Intentional overestimation</td>
-                <td>Safety margin and sensitivity studies</td>
+                <td><code>probabilistic</code></td>
+                <td>Distributions and Monte Carlo-ready inputs</td>
+                <td>Sensitivity studies and uncertainty-aware decision support</td>
               </tr>
             </tbody>
           </table>
@@ -173,10 +179,11 @@ Pr = 0.5 * [1 + erf((Y - 5) / sqrt(2))]</pre>
           <p class="eyebrow">Endpoint Workbook</p>
           <h2>One notebook tour across the full API endpoint surface</h2>
           <p>
-            A single realistic workbook that walks through materials, scenarios,
-            source terms, dispersion, fire and explosion, health and hygiene,
-            prevention/reactivity/relief, hazard evaluation, and GIS/sign
-            integration in sequence.
+            A single realistic workbook that starts with the workflow API:
+            create scenarios, validate them, launch analyses and simulations,
+            then continue into source terms, dispersion, fire and explosion,
+            health and hygiene, prevention/reactivity/relief, hazard
+            evaluation, and GIS/sign integration.
           </p>
           <div class="callout">
             <strong>Notebook:</strong>

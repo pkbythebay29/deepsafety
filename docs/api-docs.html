@@ -277,9 +277,9 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><code>scenario</code></td>
-                  <td><code>POST /scenario-engine/define</code>, <code>POST /source-models/scenario/select</code></td>
-                  <td>Separates realistic and worst-case assumptions explicitly.</td>
+                  <td><code>workflow scenarios</code></td>
+                  <td><code>POST /scenarios</code>, <code>POST /scenarios/{scenarioId}/validate</code>, <code>POST /scenarios/{scenarioId}/clone</code></td>
+                  <td>Creates persisted deterministic, triplet, or probabilistic scenarios for downstream analyses.</td>
                 </tr>
                 <tr>
                   <td><code>gas release</code></td>
@@ -297,9 +297,9 @@
                   <td>Flashing fraction, rainout, and conservative release handling.</td>
                 </tr>
                 <tr>
-                  <td><code>scenario templates</code></td>
-                  <td><code>GET /scenario-library/templates</code></td>
-                  <td>Provides application-ready starting points for common release scenarios.</td>
+                  <td><code>workflow orchestration</code></td>
+                  <td><code>POST /analyses</code>, <code>POST /simulations</code>, <code>GET /jobs/{jobId}</code></td>
+                  <td>Launches async-style workflow resources and tracks completion through persisted job records.</td>
                 </tr>
               </tbody>
             </table>
@@ -959,9 +959,19 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><code>POST /scenario-engine/define</code></td>
-                  <td><code>incident_type</code>, <code>classification</code>, <code>inventory</code>, <code>equipment</code>, <code>failure_mode</code>, <code>meteorology</code>, <code>topography</code></td>
-                  <td>Scenario assumptions selection; source formulas applied downstream.</td>
+                  <td><code>POST /scenarios</code></td>
+                  <td><code>name</code>, <code>model_profile</code>, <code>scenario_mode</code>, <code>inputs</code>, optional <code>tags</code> and <code>description</code></td>
+                  <td>Creates a persisted workflow scenario; source, analysis, and simulation formulas apply downstream.</td>
+                </tr>
+                <tr>
+                  <td><code>PATCH /scenarios/{scenarioId}</code></td>
+                  <td>Patch any subset of <code>name</code>, <code>description</code>, <code>status</code>, <code>inputs</code>, <code>notes</code>, and <code>model_profile</code></td>
+                  <td>Versioned scenario updates guarded by <code>If-Match</code> when desired.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /analyses</code> / <code>POST /simulations</code></td>
+                  <td><code>scenario_id</code> plus either <code>analysis_type</code> or <code>sampling</code> details</td>
+                  <td>Schedules deterministic or Monte Carlo workflow resources and returns an async job handle.</td>
                 </tr>
                 <tr>
                   <td><code>POST /source-models/*</code></td>
@@ -1105,6 +1115,21 @@
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><code>POST /heatmaps</code></td>
+                  <td><code>source</code>, <code>heatmap_type</code>, <code>metric</code>, optional <code>threshold_value</code>, <code>percentile</code>, and <code>grid</code></td>
+                  <td>Builds a persisted grid from an analysis or simulation resource and returns a job handle.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /fault-trees/{faultTreeId}/evaluate</code></td>
+                  <td><code>mode</code> plus optional <code>iterations</code></td>
+                  <td>Evaluates a stored fault tree in deterministic or probabilistic mode and records the result via a job.</td>
+                </tr>
+                <tr>
+                  <td><code>POST /mocs/{mocId}/delta-analysis</code>, <code>POST /reports</code></td>
+                  <td>MOC baseline/proposed scenario IDs or report source metadata</td>
+                  <td>Runs before/after workflow comparisons and report generation using the persisted workflow resources.</td>
+                </tr>
                 <tr>
                   <td><code>POST /gis/scenarios/evaluate</code></td>
                   <td><code>scenario_type</code>, <code>source</code>, <code>receptors</code>[], <code>model_id</code>, <code>inputs</code>, <code>constants</code></td>

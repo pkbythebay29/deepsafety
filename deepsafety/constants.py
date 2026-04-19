@@ -1,35 +1,13 @@
 from __future__ import annotations
 
-from deepsafety.data_access import load_constants_registry
-
-
-DEFAULT_CONSTANTS: dict[str, dict[str, object]] = load_constants_registry()["constants"]
-
-
-MODEL_CONSTANTS: dict[str, tuple[str, ...]] = {
-    "dispersion.gaussian_puff_ground": ("shared.pi",),
-    "dispersion.gaussian_puff_screening_radius": ("shared.pi",),
-    "fire.flammability_limits": (
-        "shared.absolute_zero_offset_c",
-        "shared.reference_temperature_c",
-    ),
-    "fire.point_source_heat_flux": (
-        "shared.pi",
-        "fire.default_radiative_fraction",
-        "fire.default_atmospheric_transmissivity",
-    ),
-    "fire.point_source_heat_flux_radius": (
-        "shared.pi",
-        "fire.default_radiative_fraction",
-        "fire.default_atmospheric_transmissivity",
-    ),
-}
+from deepsafety.data_access import load_constants_registry, load_model_constants_registry
 
 
 def get_constant_definition(name: str) -> dict[str, object]:
-    if name not in DEFAULT_CONSTANTS:
+    constants = load_constants_registry()["constants"]
+    if name not in constants:
         raise KeyError(name)
-    return DEFAULT_CONSTANTS[name]
+    return dict(constants[name])
 
 
 def get_constant_value(name: str) -> float:
@@ -37,11 +15,11 @@ def get_constant_value(name: str) -> float:
 
 
 def list_constants() -> dict[str, dict[str, object]]:
-    return DEFAULT_CONSTANTS
+    return dict(load_constants_registry()["constants"])
 
 
 def get_model_constant_names(model_id: str) -> tuple[str, ...]:
-    return MODEL_CONSTANTS.get(model_id, ())
+    return load_model_constants_registry().get(model_id, ())
 
 
 def resolve_constants(
@@ -68,3 +46,4 @@ def resolve_constants(
         }
 
     return resolved
+

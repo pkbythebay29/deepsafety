@@ -4,10 +4,6 @@ import math
 
 from deepsafety.constants import get_constant_value
 
-
-EARTH_RADIUS_M = get_constant_value("gis.earth_radius_m")
-
-
 def haversine_distance_m(
     source_lat: float,
     source_lon: float,
@@ -27,7 +23,7 @@ def haversine_distance_m(
         + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
     )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return EARTH_RADIUS_M * c
+    return get_constant_value("gis.earth_radius_m") * c
 
 
 def point_feature(
@@ -50,7 +46,8 @@ def circle_polygon(
     segments: int = 64,
 ) -> dict[str, object]:
     coordinates: list[list[float]] = []
-    angular_distance = radius_m / EARTH_RADIUS_M
+    earth_radius_m = get_constant_value("gis.earth_radius_m")
+    angular_distance = radius_m / earth_radius_m
     lat_rad = math.radians(latitude)
     lon_rad = math.radians(longitude)
 

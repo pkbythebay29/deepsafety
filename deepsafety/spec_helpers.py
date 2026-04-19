@@ -8,8 +8,6 @@ from deepsafety.constants import get_constant_value
 from deepsafety.fire_explosion_models import solve_fire_explosion_model
 from deepsafety.materials_data import get_material_flammability
 
-TNT_HEAT_KJ_KG = get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
-
 
 def _overpressure_from_scaled_distance(z: float) -> float:
     z = max(z, 0.05)
@@ -113,7 +111,10 @@ def calculate_tnt_equivalency(payload: dict[str, Any]) -> dict[str, Any]:
     if not 0 <= efficiency <= 1:
         raise ModelInputError("Input 'efficiency' must be between 0 and 1.")
     return {
-        "tntEquivalentMass": round(chemical_energy * efficiency / TNT_HEAT_KJ_KG, 6),
+        "tntEquivalentMass": round(
+            chemical_energy * efficiency / get_constant_value("shared.tnt_heat_of_explosion_kj_kg"),
+            6,
+        ),
     }
 
 

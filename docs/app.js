@@ -236,7 +236,7 @@ async function fetchJson(path, options = {}) {
 
 async function hydrateScenarioModels() {
   try {
-    const scenarios = await fetchJson("/scenarios");
+    const scenarios = await fetchJson("/scenario-catalog");
     state.modelsByScenario = scenarios;
     populateModels();
   } catch (error) {

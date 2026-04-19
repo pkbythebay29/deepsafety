@@ -5,9 +5,6 @@ import math
 from deepsafety.catalog import ModelInputError
 from deepsafety.constants import get_constant_value
 
-TNT_HEAT_KJ_KG = get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
-DEFAULT_FIRE_RADIATIVE_FRACTION = get_constant_value("fire.default_radiative_fraction")
-
 
 def _require_float(payload: dict[str, object], key: str) -> float:
     if key not in payload:
@@ -58,7 +55,7 @@ def _solve_jet_fire(payload: dict[str, object]) -> dict[str, object]:
     release_rate_kg_s = _positive_float(payload, "release_rate_kg_s")
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     distance_m = _positive_float(payload, "distance_m")
-    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
+    radiative_fraction = float(payload.get("radiative_fraction", get_constant_value("fire.default_radiative_fraction")))
     heat_flux_kw_m2 = (
         radiative_fraction * release_rate_kg_s * heat_of_combustion_kj_kg / (4 * math.pi * distance_m**2)
     )
@@ -74,7 +71,7 @@ def _solve_pool_fire(payload: dict[str, object]) -> dict[str, object]:
     burning_flux_kg_m2_s = _positive_float(payload, "burning_flux_kg_m2_s")
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     distance_m = _positive_float(payload, "distance_m")
-    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
+    radiative_fraction = float(payload.get("radiative_fraction", get_constant_value("fire.default_radiative_fraction")))
     burning_rate_kg_s = pool_area_m2 * burning_flux_kg_m2_s
     heat_flux_kw_m2 = (
         radiative_fraction * burning_rate_kg_s * heat_of_combustion_kj_kg / (4 * math.pi * distance_m**2)
@@ -92,7 +89,7 @@ def _solve_fireball(payload: dict[str, object]) -> dict[str, object]:
     distance_m = _positive_float(payload, "distance_m")
     diameter_m = 5.8 * fuel_mass_kg**0.325
     duration_s = 0.45 * fuel_mass_kg**0.26
-    radiative_fraction = float(payload.get("radiative_fraction", DEFAULT_FIRE_RADIATIVE_FRACTION))
+    radiative_fraction = float(payload.get("radiative_fraction", get_constant_value("fire.default_radiative_fraction")))
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     heat_flux_kw_m2 = (
         radiative_fraction
@@ -119,7 +116,12 @@ def _solve_tnt_equivalency(payload: dict[str, object]) -> dict[str, object]:
     heat_of_combustion_kj_kg = _positive_float(payload, "heat_of_combustion_kj_kg")
     explosion_efficiency = float(payload.get("explosion_efficiency", 0.1))
     distance_m = _positive_float(payload, "distance_m")
-    tnt_mass_kg = fuel_mass_kg * heat_of_combustion_kj_kg * explosion_efficiency / TNT_HEAT_KJ_KG
+    tnt_mass_kg = (
+        fuel_mass_kg
+        * heat_of_combustion_kj_kg
+        * explosion_efficiency
+        / get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
+    )
     scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
     overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance)
     return {
@@ -136,7 +138,7 @@ def _solve_multi_energy(payload: dict[str, object]) -> dict[str, object]:
     blast_strength = float(payload.get("blast_strength", 5.0))
     distance_m = _positive_float(payload, "distance_m")
     equivalent_energy_kj = fuel_mass_kg * heat_of_combustion_kj_kg * blast_strength / 10
-    equivalent_tnt_kg = equivalent_energy_kj / TNT_HEAT_KJ_KG
+    equivalent_tnt_kg = equivalent_energy_kj / get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
     scaled_distance = distance_m / max(equivalent_tnt_kg, 1e-6) ** (1 / 3)
     overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance) * (blast_strength / 5)
     return {
@@ -154,7 +156,12 @@ def _solve_vce(payload: dict[str, object]) -> dict[str, object]:
     congestion_factor = float(payload.get("congestion_factor", 1.0))
     distance_m = _positive_float(payload, "distance_m")
     yield_factor = min(0.3, 0.03 + 0.005 * ignition_delay_s + 0.05 * congestion_factor)
-    tnt_mass_kg = cloud_mass_kg * heat_of_combustion_kj_kg * yield_factor / TNT_HEAT_KJ_KG
+    tnt_mass_kg = (
+        cloud_mass_kg
+        * heat_of_combustion_kj_kg
+        * yield_factor
+        / get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
+    )
     scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
     overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance)
     return {
@@ -173,7 +180,12 @@ def _solve_deflagration(payload: dict[str, object]) -> dict[str, object]:
     confinement_factor = float(payload.get("confinement_factor", 1.0))
     distance_m = _positive_float(payload, "distance_m")
     effective_efficiency = min(0.2, 0.02 + 0.0002 * flame_speed_m_s + 0.03 * confinement_factor)
-    tnt_mass_kg = cloud_mass_kg * heat_of_combustion_kj_kg * effective_efficiency / TNT_HEAT_KJ_KG
+    tnt_mass_kg = (
+        cloud_mass_kg
+        * heat_of_combustion_kj_kg
+        * effective_efficiency
+        / get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
+    )
     scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
     overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance)
     return {
@@ -191,7 +203,12 @@ def _solve_detonation(payload: dict[str, object]) -> dict[str, object]:
     distance_m = _positive_float(payload, "distance_m")
     if not 0 < detonable_fraction <= 1:
         raise ModelInputError("Input 'detonable_fraction' must be between 0 and 1.")
-    tnt_mass_kg = cloud_mass_kg * heat_of_combustion_kj_kg * detonable_fraction / TNT_HEAT_KJ_KG
+    tnt_mass_kg = (
+        cloud_mass_kg
+        * heat_of_combustion_kj_kg
+        * detonable_fraction
+        / get_constant_value("shared.tnt_heat_of_explosion_kj_kg")
+    )
     scaled_distance = distance_m / max(tnt_mass_kg, 1e-6) ** (1 / 3)
     overpressure_kpa = _overpressure_from_scaled_distance(scaled_distance) * 1.3
     return {

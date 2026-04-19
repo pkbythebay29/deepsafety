@@ -15,6 +15,7 @@ from deepsafety.catalog import (
     run_model,
 )
 from deepsafety.constants import get_constant_definition, get_constant_value, list_constants, resolve_constants
+from deepsafety.core_analysis import create_core_analysis_router
 from deepsafety.dispersion.neutrally_buoyant import calculate_sigma_y, calculate_sigma_z
 from deepsafety.dispersion_workflows import (
     evaluate_release_mitigation,
@@ -797,6 +798,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1024)
+    app.include_router(create_core_analysis_router())
 
     @app.get("/")
     def root() -> dict[str, object]:
@@ -867,7 +869,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="Model not found.")
         return _to_constant_metadata(resolve_constants(model_id, {}))
 
-    @app.get("/scenarios")
+    @app.get("/scenario-catalog")
     def get_scenarios() -> dict[str, object]:
         return {
             scenario_type: {

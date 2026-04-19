@@ -37,8 +37,62 @@ class DeepSafetyClient:
     def get_model(self, model_id: str) -> Any:
         return self._request("GET", f"/models/{model_id}")
 
+    def list_scenarios(
+        self,
+        page_size: int = 50,
+        page_token: str | None = None,
+        status: str | None = None,
+        query: str | None = None,
+    ) -> Any:
+        params = [f"page_size={page_size}"]
+        if page_token:
+            params.append(f"page_token={page_token}")
+        if status:
+            params.append(f"status={status}")
+        if query:
+            params.append(f"q={query}")
+        return self._request("GET", f"/scenarios?{'&'.join(params)}")
+
+    def create_scenario(self, payload: dict[str, Any]) -> Any:
+        return self._request("POST", "/scenarios", payload)
+
+    def get_scenario(self, scenario_id: str) -> Any:
+        return self._request("GET", f"/scenarios/{scenario_id}")
+
+    def validate_scenario(self, scenario_id: str) -> Any:
+        return self._request("POST", f"/scenarios/{scenario_id}/validate")
+
+    def list_analyses(self, scenario_id: str | None = None, page_size: int = 50, page_token: str | None = None) -> Any:
+        params = [f"page_size={page_size}"]
+        if scenario_id:
+            params.append(f"scenario_id={scenario_id}")
+        if page_token:
+            params.append(f"page_token={page_token}")
+        return self._request("GET", f"/analyses?{'&'.join(params)}")
+
+    def create_analysis(self, payload: dict[str, Any]) -> Any:
+        return self._request("POST", "/analyses", payload)
+
+    def get_analysis(self, analysis_id: str) -> Any:
+        return self._request("GET", f"/analyses/{analysis_id}")
+
+    def create_simulation(self, payload: dict[str, Any]) -> Any:
+        return self._request("POST", "/simulations", payload)
+
+    def get_simulation(self, simulation_id: str) -> Any:
+        return self._request("GET", f"/simulations/{simulation_id}")
+
+    def get_job(self, job_id: str) -> Any:
+        return self._request("GET", f"/jobs/{job_id}")
+
+    def create_report(self, payload: dict[str, Any]) -> Any:
+        return self._request("POST", "/reports", payload)
+
     def define_scenario(self, payload: dict[str, Any]) -> Any:
         return self._request("POST", "/scenario-engine/define", payload)
+
+    def get_scenario_catalog(self) -> Any:
+        return self._request("GET", "/scenario-catalog")
 
     def list_materials(self, query: str | None = None, page: int = 1, page_size: int = 20) -> Any:
         suffix = f"?page={page}&pageSize={page_size}"

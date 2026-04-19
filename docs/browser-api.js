@@ -1590,7 +1590,7 @@
         source_model: "gas_release",
         dispersion_model: "gaussian_puff",
         impact_endpoint: "/gis/impact-zones",
-        scenario_endpoint: "/scenario-engine/define",
+        scenario_endpoint: "/scenarios",
       },
       scenario_template_id: result.scenario_template_id,
       scenario_definition_seed: {
@@ -1684,8 +1684,11 @@
       }
       return resolveConstants(modelId, {});
     }
-    if (method === "GET" && path.pathname === "/scenarios") {
+    if (method === "GET" && path.pathname === "/scenario-catalog") {
       return SCENARIOS;
+    }
+    if (method === "GET" && path.pathname === "/scenarios") {
+      return [];
     }
     if (method === "POST" && path.pathname === "/scenario-engine/define") {
       return { scenario: buildScenarioDefinition(payload) };

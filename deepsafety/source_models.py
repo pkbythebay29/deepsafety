@@ -5,8 +5,6 @@ import math
 from deepsafety.catalog import ModelInputError
 from deepsafety.constants import get_constant_value
 
-GRAVITY = get_constant_value("shared.gravity_standard")
-UNIVERSAL_GAS_CONSTANT = get_constant_value("shared.universal_gas_constant")
 DEFAULT_DISCHARGE_COEFFICIENT = 0.62
 DEFAULT_GAS_COMPRESSIBILITY = 1.0
 DEFAULT_REYNOLDS_NUMBER = 100_000.0
@@ -71,7 +69,7 @@ def _inventory_mass_limit(payload: dict[str, object], requested_mass_kg: float) 
 
 
 def _specific_gas_constant(molecular_weight_kg_kmol: float) -> float:
-    return UNIVERSAL_GAS_CONSTANT / (molecular_weight_kg_kmol / 1000.0)
+    return get_constant_value("shared.universal_gas_constant") / (molecular_weight_kg_kmol / 1000.0)
 
 
 def solve_source_model(model_type: str, payload: dict[str, object]) -> dict[str, object]:
@@ -214,7 +212,7 @@ def _solve_liquid_release(payload: dict[str, object], conservative_mode: bool) -
     if subtype in {"hole_in_tank", "tank_leak", "gravity_driven"}:
         area_m2 = _area_from_payload(payload, "hole_area_m2")
         head_m = _positive_float(payload, "liquid_head_m")
-        velocity_m_s = discharge_coefficient * math.sqrt(2 * GRAVITY * head_m)
+        velocity_m_s = discharge_coefficient * math.sqrt(2 * get_constant_value("shared.gravity_standard") * head_m)
         submodel = "gravity_driven_tank_hole"
     else:
         area_m2 = _area_from_payload(payload, "pipe_area_m2")
