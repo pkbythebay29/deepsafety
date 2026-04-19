@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="site-shell">
+    <div class="site-shell site-shell--wide">
       <nav class="site-nav">
         <div class="brand-lockup">
           <div class="brand-mark">DS</div>
@@ -22,72 +22,119 @@
             <span>deepsafety.tech</span>
           </div>
         </div>
-        <div class="nav-links">
-          <a class="is-active" href="./index.html">Docs Home</a>
-          <a href="./api-docs.html">API Reference</a>
-          <a href="./tutorials.html">Tutorials</a>
-          <a href="./use-cases.html">Use Cases</a>
-          <a href="./app.html">App</a>
-          <a href="./readme.html">README</a>
+        <div class="nav-actions">
+          <button class="command-trigger" type="button" data-command-trigger>
+            Search
+            <span>CMD/CTRL K</span>
+          </button>
+          <div class="nav-links">
+            <a class="is-active" href="./index.html">Docs Home</a>
+            <a href="./api-docs.html">API Reference</a>
+            <a href="./tutorials.html">Tutorials</a>
+            <a href="./use-cases.html">Use Cases</a>
+            <a href="./app.html">Try Now</a>
+            <a href="./readme.html">README</a>
+          </div>
         </div>
       </nav>
 
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">deepsafety.tech</p>
-          <h1>Physics-based process safety infrastructure for decision systems.</h1>
+      <header class="hero hero--modern">
+        <div class="hero-copy hero-copy--modern">
+          <p class="eyebrow">Pipeline Consequence Intelligence</p>
+          <h1>Draw the route. Snap the release. Get consequence answers fast.</h1>
           <p class="lede">
-            Deep Safety provides a verifiable computational layer for
-            consequence analysis, hazard evaluation, and operational decision
-            support. One consistent model contract spans notebooks, APIs,
-            browser applications, GIS workflows, and agent systems.
+            Deep Safety turns source release setup, pipeline consequence
+            analysis, and hazard workflows into one cleaner software
+            experience. The website now leads with the interactive product:
+            browser-local playgrounds, live JSON, tighter maps, and direct
+            paths into pipeline screening.
           </p>
-          <div class="doc-tabs">
-            <a class="doc-tab is-active" href="./index.html">Documentation Home</a>
-            <a class="doc-tab" href="./api-docs.html">Reference Modules</a>
-            <a class="doc-tab" href="./tutorials.html">Training Guides</a>
-            <a class="doc-tab" href="./use-cases.html">Use Cases</a>
+          <div class="hero-badges">
+            <span class="tag">Pipeline routes with GPS points</span>
+            <span class="tag">Source release setup</span>
+            <span class="tag">Consequence rings and receptors</span>
           </div>
           <div class="hero-actions">
-            <a class="button-link primary-button" href="./api-docs.html">Open Reference</a>
-            <a class="button-link secondary-button" href="./tutorials.html">Start Training</a>
-            <a class="button-link ghost-button" href="./app.html">Launch App</a>
+            <a class="button-link primary-button" href="./app.html">Try Now</a>
+            <a class="button-link secondary-button" href="./use-cases.html#pipeline">See Pipeline Workflow</a>
+            <a class="button-link ghost-button" href="./tutorials.html">Open Tutorials</a>
+          </div>
+          <div class="hero-kpis">
+            <div class="hero-kpi">
+              <strong>Interactive playground</strong>
+              <span>Edit request payloads and inspect live browser-local JSON responses.</span>
+            </div>
+            <div class="hero-kpi">
+              <strong>Command + K flow</strong>
+              <span>Fast global navigation across docs, use cases, and the interactive workspace.</span>
+            </div>
           </div>
         </div>
 
-        <aside class="hero-panel stack">
-          <div>
-            <h2>What the platform exposes</h2>
-            <p class="doc-copy">
-              It converts material properties, equipment data, and operating
-              conditions into source terms, dispersion fields, fire and
-              explosion metrics, effect estimates, and hazard-study outputs
-              that can be consumed directly by software systems.
-            </p>
+        <aside class="hero-panel hero-panel--showcase stack">
+          <div class="terminal-window">
+            <div class="terminal-bar">
+              <span></span><span></span><span></span>
+              <small>browser-local demo</small>
+            </div>
+            <pre data-terminal-demo></pre>
           </div>
-          <div>
-            <span class="tag">Materials</span>
-            <span class="tag">Source terms</span>
-            <span class="tag">Dispersion</span>
-            <span class="tag">Fire and explosion</span>
-            <span class="tag">Hazard studies</span>
+          <div class="signal-grid">
+            <article class="signal-card">
+              <p class="eyebrow">Route Aware</p>
+              <h3>Pipeline consequence analysis</h3>
+              <p>Highlight the corridor, place the source release near the line, and let the UX center the right workflow immediately.</p>
+            </article>
+            <article class="signal-card">
+              <p class="eyebrow">Glass UI</p>
+              <h3>Less noise, more signal</h3>
+              <p>Denser cards, tighter page framing, and contrast accents keep attention on the product instead of unused whitespace.</p>
+            </article>
           </div>
-          <div class="path-block">pip install deepsafety
-deepsafety-api --host 0.0.0.0 --port 8000
-POST /scenarios
-POST /analyses
-GET  /jobs/{jobId}</div>
         </aside>
       </header>
+
+      <section class="playground-shell">
+        <div class="playground-copy">
+          <p class="eyebrow">Interactive Playground</p>
+          <h2>Try the pipeline and source-release experience directly on the landing page.</h2>
+          <p class="doc-copy">
+            Inspired by modern SaaS launch pages, this playground lets you edit
+            payloads and inspect JSON responses without leaving the site. Use
+            the pipeline example to see how route creation, source snapping,
+            and consequence rings fit together.
+          </p>
+        </div>
+        <div class="playground-panel glass-panel" data-playground>
+          <div class="playground-topbar">
+            <div class="playground-tabs">
+              <button class="playground-tab is-active" type="button" data-playground-example="pipeline">Pipeline route</button>
+              <button class="playground-tab" type="button" data-playground-example="source">Source release</button>
+              <button class="playground-tab" type="button" data-playground-example="rings">Consequence rings</button>
+            </div>
+            <button class="primary-button" type="button" data-playground-run>Run browser-local</button>
+          </div>
+          <div class="playground-grid">
+            <label class="playground-pane">
+              <span>Editable request</span>
+              <textarea class="playground-input" data-playground-input></textarea>
+            </label>
+            <div class="playground-pane">
+              <span>JSON response</span>
+              <pre class="playground-output" data-playground-output></pre>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section class="docs-home-grid">
         <aside class="docs-sidebar">
           <div class="sidebar-title">
             <p class="eyebrow">Contents</p>
-            <h2>Documentation Sections</h2>
+            <h2>Fast Paths</h2>
           </div>
           <div class="sidebar-group">
-            <h3>Core references</h3>
+            <h3>Explore</h3>
             <ul class="sidebar-links">
               <li><a href="./api-docs.html#overview">API overview</a></li>
               <li><a href="./api-docs.html#materials">Materials module</a></li>
@@ -97,90 +144,93 @@ GET  /jobs/{jobId}</div>
             </ul>
           </div>
           <div class="sidebar-group">
-            <h3>Learning path</h3>
+            <h3>Act</h3>
             <ul class="sidebar-links">
               <li><a href="./tutorials.html#quickstart">Quick start</a></li>
               <li><a href="./tutorials.html#scenario-training">Scenario training</a></li>
               <li><a href="./tutorials.html#notebook-training">Notebook training</a></li>
               <li><a href="./use-cases.html#pipeline">Pipeline leak workflow</a></li>
               <li><a href="./use-cases.html#hazop">HAZOP workflow</a></li>
+              <li><a href="./app.html">Try pipeline analysis now</a></li>
             </ul>
           </div>
           <p class="toc-note">
-            Reference pages are organized so application teams can jump
-            directly to the model family they need.
+            The experience is now organized around a faster product motion:
+            explore, try, then go deeper.
           </p>
         </aside>
 
         <main class="docs-content">
           <section class="doc-section">
-            <p class="eyebrow">Overview</p>
-            <h2>One physical model chain across operational software</h2>
+            <p class="eyebrow">What Matters</p>
+            <h2>One product surface for route geometry, source release, and consequence interpretation.</h2>
             <p class="section-intro">
-              Material properties and operating conditions are treated as
-              upstream dependencies. Source models generate release rate and
-              phase state; dispersion and fire/explosion models convert those
-              outputs into consequence metrics; hazard-evaluation workflows then
-              consume the same outputs for HAZOP, FMEA, and What-If studies.
-              This makes the chain auditable and consistent across tools.
+              Deep Safety is at its strongest when the UX helps people move
+              from physical setup to decision-ready output without context
+              switching. The website now puts pipeline consequence analysis and
+              source release screening up front, while keeping the rest of the
+              docs a single command away.
             </p>
           </section>
 
           <section class="doc-section">
-            <p class="eyebrow">Modules</p>
-            <h2>Documentation and product entry points</h2>
+            <p class="eyebrow">Product Entry</p>
+            <h2>Documentation and workflow entry points</h2>
             <div class="module-grid">
               <article class="module-list">
-                <div class="module-kicker">Reference</div>
-                <h3>API Reference</h3>
+                <div class="module-kicker">Try Now</div>
+                <h3>Interactive workspace</h3>
                 <p>
-                  Organized by module family with representative endpoints,
-                  input expectations, equations, constants, and integration
-                  notes.
+                  Draw pipelines, set source releases, and run consequence
+                  rings or receptor analysis in the browser without leaving the
+                  website.
+                </p>
+                <ul class="module-links">
+                  <li><a href="./app.html">Open Try Now</a></li>
+                  <li><a href="./use-cases.html#pipeline">Pipeline release workflow</a></li>
+                  <li><a href="./use-cases.html#signs">Source release from field context</a></li>
+                </ul>
+              </article>
+              <article class="module-list">
+                <div class="module-kicker">Reference</div>
+                <h3>API and model docs</h3>
+                <p>
+                  Explore the deeper reference layer once you’ve seen the
+                  product motion. Formulas, modules, and docs remain intact,
+                  but the navigation gets you there faster.
                 </p>
                 <ul class="module-links">
                   <li><a href="./api-docs.html#overview">Model-chain overview</a></li>
-                  <li><a href="./api-docs.html#fire-explosion">Fire and explosion</a></li>
+                  <li><a href="./api-docs.html#dispersion">Dispersion and GIS</a></li>
                   <li><a href="./api-docs.html#constants">Constants and provenance</a></li>
                 </ul>
               </article>
               <article class="module-list">
                 <div class="module-kicker">Training</div>
-                <h3>Tutorials</h3>
+                <h3>Tutorials and notebooks</h3>
                 <p>
-                  Step-by-step examples for package users, API integrators, and
-                  browser-local users who want fast onboarding.
+                  Work from quick starts into incident-style flows, with
+                  notebooks and guided pages that now sit behind a tighter
+                  visual system.
                 </p>
                 <ul class="module-links">
                   <li><a href="./tutorials.html#quickstart">Ten-minute quick start</a></li>
-                  <li><a href="./tutorials.html#api-training">API-first workflow</a></li>
-                  <li><a href="./tutorials.html#browser-training">Browser-local workflow</a></li>
+                  <li><a href="./tutorials.html#endpoint-workbook">Endpoint workbook</a></li>
+                  <li><a href="./tutorials.html#notebook-training">Notebook bundle</a></li>
                 </ul>
               </article>
               <article class="module-list">
-                <div class="module-kicker">Application</div>
-                <h3>Use Cases</h3>
+                <div class="module-kicker">Use Cases</div>
+                <h3>Operational patterns</h3>
                 <p>
-                  Concrete patterns for pipeline leaks, toxic releases, siting
-                  screens, sign-triggered screening, and hazard-study support.
+                  Move straight into the scenarios that matter most:
+                  pipelines, toxic releases, sign-triggered screening, and PHA
+                  support.
                 </p>
                 <ul class="module-links">
-                  <li><a href="./use-cases.html#pipeline">Pipeline leak</a></li>
+                  <li><a href="./use-cases.html#pipeline">Pipeline consequence flow</a></li>
                   <li><a href="./use-cases.html#toxic-release">Toxic gas release</a></li>
-                  <li><a href="./use-cases.html#signs">Field sign analysis</a></li>
-                </ul>
-              </article>
-              <article class="module-list">
-                <div class="module-kicker">Repository</div>
-                <h3>README and install notes</h3>
-                <p>
-                  Use the README page for installation, packaging, Docker, MCP,
-                  and project-level details outside the API reference itself.
-                </p>
-                <ul class="module-links">
-                  <li><a href="./readme.html">Package install</a></li>
-                  <li><a href="./readme.html">Docker and MCP</a></li>
-                  <li><a href="./readme.html">Notebook entry points</a></li>
+                  <li><a href="./use-cases.html#hazop">Linked hazard studies</a></li>
                 </ul>
               </article>
             </div>
@@ -191,27 +241,26 @@ GET  /jobs/{jobId}</div>
             <h2>Immediate platform capabilities</h2>
             <div class="mini-grid">
               <article class="mini-card">
-                <h3>Comprehensive endpoint families</h3>
+                <h3>Pipeline-first UX</h3>
                 <p>
-                  Materials, source terms, dispersion, fire, explosion, effect,
-                  prevention, relief, and hazard-evaluation modules are already
-                  exposed through the same API surface.
+                  The site now makes pipeline routes and source releases feel
+                  like a primary workflow instead of a buried example.
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Transparent equations and constants</h3>
+                <h3>Interactive website surfaces</h3>
                 <p>
-                  Equations, constants, and physical meaning are explicit in
-                  responses and docs. Constants can be overridden per request
-                  for sensitivity studies and what-if analysis.
+                  The landing page includes a playground, a command bar, and an
+                  animated terminal-style preview so the product motion is
+                  visible before people dive into docs.
                 </p>
               </article>
               <article class="mini-card">
-                <h3>Built for software integration</h3>
+                <h3>Cleaner density</h3>
                 <p>
-                  Use the same model contract in browser-local mode, Python
-                  notebooks, FastAPI services, Docker deployments, and MCP
-                  tools without rewriting calculation logic.
+                  Wider but tighter layouts, glass panels, and stronger
+                  contrast accents make the docs and app feel more intentional
+                  and less left-heavy.
                 </p>
               </article>
             </div>
@@ -231,5 +280,7 @@ GET  /jobs/{jobId}</div>
         <a href="https://github.com/pkbythebay29">GitHub</a>
       </p>
     </div>
+    <script src="./browser-api.js"></script>
+    <script src="./site.js"></script>
   </body>
 </html>

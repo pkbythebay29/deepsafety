@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="site-shell">
+    <div class="site-shell site-shell--wide">
       <nav class="site-nav">
         <div class="brand-lockup">
           <div class="brand-mark">DS</div>
@@ -28,35 +28,62 @@
             <span>deepsafety.tech</span>
           </div>
         </div>
-        <div class="nav-links">
-          <a href="./index.html">Docs Home</a>
-          <a href="./api-docs.html">API Reference</a>
-          <a href="./tutorials.html">Tutorials</a>
-          <a href="./use-cases.html">Use Cases</a>
-          <a class="is-active" href="./app.html">App</a>
-          <a href="./readme.html">README</a>
+        <div class="nav-actions">
+          <button class="command-trigger" type="button" data-command-trigger>
+            Search
+            <span>CMD/CTRL K</span>
+          </button>
+          <div class="nav-links">
+            <a href="./index.html">Docs Home</a>
+            <a href="./api-docs.html">API Reference</a>
+            <a href="./tutorials.html">Tutorials</a>
+            <a href="./use-cases.html">Use Cases</a>
+            <a class="is-active" href="./app.html">Try Now</a>
+            <a href="./readme.html">README</a>
+          </div>
         </div>
       </nav>
 
-      <header class="page-title">
-        <p class="eyebrow">Interactive application</p>
-        <h1>Configure a scenario, inspect assumptions, and map consequence rings.</h1>
-        <p>
-          The application defaults to browser-local mode, so it works without
-          an external API endpoint. Each field explains the required parameter,
-          each model panel shows the equations, constants, and provenance used
-          for the result, and impact output is rendered as consequence rings so
-          effect intensity can be interpreted by radius. For pipeline releases,
-          you can sketch a route with GPS points, snap a release onto it, and
-          run the same receptor and ring analysis flow.
-        </p>
+      <header class="page-title app-hero">
+        <div class="app-hero-copy">
+          <p class="eyebrow">Try Now</p>
+          <h1>Pipeline consequence analysis with a cleaner map-first workflow.</h1>
+          <p class="doc-copy">
+            Sketch the pipeline, place the source release, and move straight
+            into receptor screening or consequence rings. This experience
+            defaults to browser-local mode, so you can try the full UX without
+            wiring an external endpoint first.
+          </p>
+          <div class="hero-badges">
+            <span class="tag">Draw pipeline routes</span>
+            <span class="tag">Snap source release</span>
+            <span class="tag">Inspect consequence rings</span>
+          </div>
+        </div>
+        <aside class="hero-panel app-hero-panel stack">
+          <div class="signal-grid signal-grid--two">
+            <article class="signal-card">
+              <p class="eyebrow">Step 1</p>
+              <h3>Draw the line</h3>
+              <p>Use GPS clicks to sketch the corridor instead of faking a point source first.</p>
+            </article>
+            <article class="signal-card">
+              <p class="eyebrow">Step 2</p>
+              <h3>Place the release</h3>
+              <p>Drop the source near the route and let the workflow keep the geometry coherent.</p>
+            </article>
+          </div>
+          <div class="callout">
+            <strong>UX focus:</strong> tighter layout, less empty space, clearer pipeline-first actions, and faster movement from configuration to map output.
+          </div>
+        </aside>
       </header>
 
       <main class="app-layout">
         <section class="card">
           <div class="panel-header">
             <h2>Scenario Builder</h2>
-            <p>Use this to configure the source, route geometry, map inputs, and run checks.</p>
+            <p>Configure route geometry, source release, and consequence runs without the page feeling oversized or sparse.</p>
           </div>
 
           <label class="field">
@@ -205,7 +232,7 @@
         <section class="card">
           <div class="panel-header">
             <h2>Map</h2>
-            <p>Draw a pipeline first if needed, then place a release source and add receptors.</p>
+            <p>Draw the route, drop the release, then keep the map full-width and focused on the actual analysis.</p>
           </div>
           <div id="map"></div>
         </section>
@@ -241,6 +268,7 @@
       crossorigin=""
     ></script>
     <script src="./browser-api.js"></script>
+    <script src="./site.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
