@@ -1061,16 +1061,16 @@ h1,
 
 .secondary-button,
 .secondary-button.button-link {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--ink);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .ghost-button,
 .ghost-button.button-link {
-  background: transparent;
-  color: var(--ink-soft);
-  border: 1px solid var(--line);
+  background: rgba(8, 17, 30, 0.9);
+  color: var(--ink);
+  border: 1px solid rgba(159, 178, 200, 0.28);
 }
 
 .hero-kpis,
@@ -1250,6 +1250,19 @@ textarea {
   color: var(--ink);
 }
 
+.doc-tab {
+  background: rgba(8, 17, 30, 0.92);
+  color: var(--ink);
+  border-color: rgba(159, 178, 200, 0.2);
+}
+
+.doc-tab.is-active,
+.doc-tab:hover {
+  background: rgba(89, 225, 255, 0.14);
+  color: var(--ink);
+  border-color: rgba(89, 225, 255, 0.32);
+}
+
 .playground-input,
 .playground-output {
   min-height: 320px;
@@ -1296,7 +1309,7 @@ textarea {
 }
 
 .app-layout {
-  grid-template-columns: minmax(400px, 460px) minmax(0, 1fr);
+  grid-template-columns: minmax(520px, 620px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -1306,13 +1319,45 @@ textarea {
   top: 96px;
 }
 
+.app-layout > .card:last-child {
+  position: sticky;
+  top: 96px;
+}
+
 .app-layout > .card,
 .docs-grid > .card {
   padding: 22px;
 }
 
+.app-config-card .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scenario-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+  margin: 12px 0 12px;
+}
+
+.scenario-fields .field {
+  margin-bottom: 0;
+}
+
+.app-config-card .callout {
+  padding: 14px 16px;
+}
+
+.app-config-card .button-row {
+  margin: 10px 0 12px;
+}
+
+.app-config-card textarea {
+  min-height: 92px;
+}
+
 #map {
-  min-height: 700px;
+  min-height: max(820px, calc(100vh - 170px));
   border-radius: 20px;
   border-color: var(--line-strong);
 }
@@ -1457,6 +1502,10 @@ td,
   .app-layout > .card:first-child {
     position: static;
   }
+
+  .app-layout > .card:last-child {
+    position: static;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1476,6 +1525,11 @@ td,
   }
 
   .playground-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-fields,
+  .app-config-card .grid {
     grid-template-columns: 1fr;
   }
 
