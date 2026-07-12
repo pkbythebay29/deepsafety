@@ -16,7 +16,7 @@ requires-python = ">=3.10"
 authors = [
     { name="Pkbythebay29", email="kannan@haztechrisk.org" }
 ]
-license = "MIT"
+license = { file = "LICENSE" }
 readme = "README.md"
 keywords = ["process safety", "dispersion", "flammability", "explosions", "toxicology"]
 classifiers = [
@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
+    "License :: Other/Proprietary License",
 ]
 
 [project.urls]

@@ -1,21 +1,53 @@
-MIT License
+Deep Safety Research Use License
 
-Copyright (c) 2025 MrCleanRoom
+Copyright (c) 2025 Pkbythebay29
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Grant of Research Use Rights
 
-The above copyright notice and this permission notice shall be included in all
+Permission is granted, free of charge, to any person or organization obtaining
+a copy of this software and associated documentation files (the "Software") to
+use, copy, modify, and distribute the Software solely for non-commercial
+research, academic study, and scholarly publication.
+
+2. Commercial Use Requires a Separate Paid License
+
+Any commercial use of the Software is prohibited without prior written
+permission from the copyright holder and the purchase or execution of a
+separate commercial license.
+
+For purposes of this license, "commercial use" includes any use intended for or
+directed toward commercial advantage, monetary compensation, revenue-generating
+activity, paid consulting, internal business operations of a for-profit entity,
+integration into a paid or proprietary product or service, or providing
+services to third parties using the Software.
+
+3. Conditions
+
+The above copyright notice and this license notice must be included in all
 copies or substantial portions of the Software.
+
+Any distribution of modified versions must clearly state that changes were
+made.
+
+4. No Trademark Rights
+
+This license does not grant any right to use the names, logos, or trademarks of
+the copyright holder except as required for reasonable and customary
+attribution.
+
+5. Warranty Disclaimer
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, ACCURACY, OR PERFORMANCE.
+
+6. Limitation of Liability
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. Commercial Licensing Contact
+
+To obtain commercial licensing rights, contact: kannan@haztechrisk.org

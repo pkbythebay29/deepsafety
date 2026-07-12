@@ -1,4 +1,4 @@
-﻿# Deep Safety
+# Deep Safety
 
 Deep Safety is a physics-based process safety platform for **verifiable consequence analysis, hazard evaluation, and software integration**.
 
@@ -248,4 +248,4 @@ git push origin v1.0.2
 
 ## License
 
-MIT
+Deep Safety is free for non-commercial research use. Commercial use requires a separate paid license. See LICENSE or contact kannan@haztechrisk.org for commercial licensing.
